@@ -51,14 +51,13 @@ describe('TomorrowSection', () => {
     ])
   })
 
-  it('moves a problem into today', async () => {
+  it('sets a problem aside in the backlog', async () => {
     const user = userEvent.setup()
     resetStores({ plans: { [tomorrow]: [{ id: lru, done: false }] } })
     renderTomorrow([lru])
 
-    await user.click(screen.getByRole('button', { name: 'More actions for LRU Cache' }))
-    await user.click(await screen.findByRole('menuitem', { name: 'Move to today' }))
-    expect(useTracker.getState().plans).toMatchObject({ [today]: [{ id: lru, done: false }], [tomorrow]: [] })
+    await user.click(screen.getByRole('button', { name: 'Remove LRU Cache from tomorrow' }))
+    expect(useTracker.getState()).toMatchObject({ plans: { [tomorrow]: [] }, backlog: [lru] })
   })
 })
 
@@ -72,14 +71,13 @@ describe('LaterSection', () => {
     expect(list).toHaveTextContent('Sat, Oct 31 · Linked List')
   })
 
-  it('brings one back to today', async () => {
+  it('sets one aside in the backlog', async () => {
     const user = userEvent.setup()
     resetStores({ plans: { '2026-10-31': [{ id: mergeK, done: false }] } })
     render(<LaterSection today={today} />)
 
-    await user.click(screen.getByRole('button', { name: 'More actions for Merge K Sorted Lists' }))
-    await user.click(await screen.findByRole('menuitem', { name: 'Move to today' }))
-    expect(useTracker.getState().plans[today]).toEqual([{ id: mergeK, done: false }])
+    await user.click(screen.getByRole('button', { name: 'Remove Merge K Sorted Lists from Sat, Oct 31' }))
+    expect(useTracker.getState()).toMatchObject({ plans: { '2026-10-31': [] }, backlog: [mergeK] })
     expect(screen.queryByRole('list', { name: 'Later problems' })).not.toBeInTheDocument()
   })
 

@@ -33,14 +33,17 @@ export function dueReviews(reviews: TrackerData['reviews'], today: string): numb
     .map(([id]) => Number(id))
 }
 
-/** Due reviews first (they're what you're about to forget), then the next unsolved in NeetCode order. */
+/**
+ * Due reviews first (they're what you're about to forget), then the next unsolved in NeetCode order.
+ * Skips what's planned, and what you set aside in the backlog.
+ */
 export function suggestNext(
-  s: Pick<TrackerData, 'progress' | 'reviews' | 'coreFirst'>,
+  s: Pick<TrackerData, 'progress' | 'reviews' | 'coreFirst' | 'backlog'>,
   planned: PlanItem[],
   count: number,
   date: string,
 ): number[] {
-  const taken = new Set(planned.map((p) => p.id))
+  const taken = new Set([...planned.map((p) => p.id), ...s.backlog])
   const picks = dueReviews(s.reviews, date).filter((id) => !taken.has(id)).slice(0, count)
   for (const p of problemOrder(s.coreFirst)) {
     if (picks.length >= count) break

@@ -5,10 +5,9 @@ import { formatRelative } from '@/lib/_utils/date'
 import type { PlanItem } from '@/types'
 import { DoneMark } from './DoneMark'
 import { PlanRow } from './PlanRow'
-import { doneActions } from './today-actions'
 import { useTodayRow } from './useTodayRow'
 
-/** A problem finished today: how it went, against its time box, and when it comes back. */
+/** A problem finished today: how it went, against its time box, and when it comes back. Edit and undo live on its mark. */
 export function DoneRow({ problem, item, today }: { problem: Problem; item: PlanItem; today: string }) {
   const { attempt, review } = useTodayRow(problem, item)
   const minutes = attempt?.seconds != null ? Math.max(1, Math.round(attempt.seconds / 60)) : null
@@ -28,7 +27,6 @@ export function DoneRow({ problem, item, today }: { problem: Problem; item: Plan
           'Marked solved'
         )
       }
-      actions={doneActions(problem, today)}
       muted
     />
   )

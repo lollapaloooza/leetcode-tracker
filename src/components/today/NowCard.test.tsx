@@ -2,13 +2,12 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { PROBLEMS, problemById } from '@/data/problems'
-import { openInNewTab } from '@/lib/_utils/browser'
 import { useTracker, useUI } from '@/lib/store'
 import { idOf } from '@/test/builders'
 import { resetStores } from '@/test/stores'
 import { NowCard } from './NowCard'
 
-vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn() }))
+vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn(), prefersMotion: () => false }))
 
 const today = '2026-10-26'
 const mergeK = problemById.get(idOf('Merge K Sorted Lists'))!
@@ -21,23 +20,46 @@ function renderCard(props: Partial<Parameters<typeof NowCard>[0]> = {}) {
 }
 
 describe('NowCard', () => {
-  it('shows the problem up next with its time box, and starts it on LeetCode', async () => {
+  it('shows the problem up next with its time box; Start asks where to solve it', async () => {
     const user = userEvent.setup()
     resetStores({ plans: { [today]: [{ id: mergeK.id, done: false }] } })
     const card = renderCard()
     expect(card).toHaveTextContent('Up next')
     expect(card).toHaveTextContent('40-minute time box')
 
-    await user.click(within(card).getByRole('button', { name: 'Start — opens LeetCode' }))
-    expect(useTracker.getState().timer?.id).toBe(mergeK.id)
-    expect(openInNewTab).toHaveBeenCalledWith('https://leetcode.com/problems/merge-k-sorted-lists/')
-    expect(card).toHaveTextContent('Working on it')
+    await user.click(within(card).getByRole('button', { name: 'Start' }))
+    expect(useUI.getState().startFor).toBe(mergeK.id)
   })
 
-  it("starts a Premium problem on NeetCode's free copy", () => {
+  it('sets an unstarted problem aside in the backlog and leaves the spotlight empty, with Undo', async () => {
+    const user = userEvent.setup()
+    resetStores({ plans: { [today]: [{ id: mergeK.id, done: false }, { id: idOf('Two Sum'), done: false }] } })
+    const card = renderCard()
+
+    await user.click(within(card).getByRole('button', { name: 'Remove Merge K Sorted Lists from today' }))
+    expect(useTracker.getState()).toMatchObject({ plans: { [today]: [{ id: idOf('Two Sum') }] }, backlog: [mergeK.id] })
+    expect(useUI.getState().focusClearedOn).toBe(today)
+
+    const toast = useUI.getState().toast!
+    expect(toast.text).toBe('Merge K Sorted Lists moved to the backlog')
+    toast.action!.run()
+    expect(useTracker.getState()).toMatchObject({ plans: { [today]: [{ id: mergeK.id }, { id: idOf('Two Sum') }] }, backlog: [] })
+    expect(useUI.getState().focusClearedOn).toBeNull()
+  })
+
+  it('links back to the site the problem was opened on, and to the solution video', () => {
+    resetStores({ timer: pausedAt(5) })
+    useUI.setState({ openedOn: { id: mergeK.id, site: 'neetcode' } })
+    const card = renderCard()
+    expect(within(card).getByRole('link', { name: /^Open on NeetCode/ })).toHaveAttribute('href', expect.stringContaining('neetcode.io/problems/'))
+    expect(within(card).getByRole('link', { name: /Solution video/ })).toHaveAttribute('href', expect.stringContaining('youtube.com'))
+  })
+
+  it("opens LeetCode — or a Premium problem's free copy — when it was only timed", () => {
     const premium = PROBLEMS.find((p) => p.premium)!
+    resetStores({ timer: { id: premium.id, startedAt: null, elapsed: 0 } })
     render(<NowCard problem={premium} today={today} bonus={false} />)
-    expect(screen.getByRole('button', { name: 'Start — opens NeetCode' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Open on NeetCode/ })).toBeInTheDocument()
   })
 
   it('shows the clock against the time box', () => {
@@ -74,14 +96,20 @@ describe('NowCard', () => {
     expect(useUI.getState().log).toEqual({ id: mergeK.id })
   })
 
-  it('can discard the timer from its menu', async () => {
+  it('stops the timer and keeps the problem for later, with Undo', async () => {
     const user = userEvent.setup()
-    resetStores({ timer: pausedAt(5) })
+    resetStores({ plans: { [today]: [{ id: mergeK.id, done: false }] }, timer: pausedAt(5) })
     renderCard()
 
-    await user.click(screen.getByRole('button', { name: 'More actions for Merge K Sorted Lists' }))
-    await user.click(await screen.findByRole('menuitem', { name: 'Discard timer' }))
+    await user.click(screen.getByRole('button', { name: 'Stop the timer and keep the problem for later' }))
     expect(useTracker.getState().timer).toBeNull()
+    expect(useTracker.getState().plans[today]).toEqual([{ id: mergeK.id, done: false }])
+    expect(useUI.getState().focusClearedOn).toBe(today)
+
+    const toast = useUI.getState().toast!
+    expect(toast.text).toBe('Timer stopped at 5:00')
+    toast.action!.run()
+    expect(useTracker.getState().timer).toEqual(pausedAt(5))
   })
 
   it('marks a problem past the goal as a bonus', () => {

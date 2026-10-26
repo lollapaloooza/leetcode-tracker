@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button'
 import { problemById } from '@/data/problems'
 import { formatDay } from '@/lib/_utils/date'
 import { useUI } from '@/lib/store'
+import { BacklogSection } from './BacklogSection'
 import { DayHeading } from './DayHeading'
 import { DoneToday } from './DoneToday'
+import { EmptyFocus } from './EmptyFocus'
 import { LaterSection } from './LaterSection'
 import { Notice } from './Notice'
 import { NowCard } from './NowCard'
@@ -19,7 +21,7 @@ import { useSuggest } from './useSuggest'
 import { useTodayNotices } from './useTodayNotices'
 import { WelcomeBack } from './WelcomeBack'
 
-/** Today: the date and goal, one problem in the spotlight, the queue after it, what's done, then tomorrow and later. */
+/** Today: the date and goal, one problem in the spotlight, the queue after it, what's done, then tomorrow, later and the backlog. */
 export function TodayView({ today }: { today: string }) {
   const { plan, goal, order, board } = useDayPlan(today)
   const notices = useTodayNotices(today, plan, goal)
@@ -33,7 +35,8 @@ export function TodayView({ today }: { today: string }) {
       {away !== null && <WelcomeBack today={today} away={away} />}
       <DayHeading today={today} plan={plan} goal={goal} order={order} />
       {plan.length === 0 && <EmptyToday today={today} />}
-      {nowProblem && <NowCard problem={nowProblem} today={today} bonus={order.goalMet} />}
+      {nowProblem && <NowCard key={nowProblem.id} problem={nowProblem} today={today} bonus={order.goalMet} />}
+      {!nowProblem && order.queue.length > 0 && <EmptyFocus />}
       {notices.carryOver && (
         <Notice
           action={
@@ -55,6 +58,7 @@ export function TodayView({ today }: { today: string }) {
         <TomorrowSection today={today} ids={board.lists.tomorrow} />
       </PlanBoard>
       <LaterSection today={today} />
+      <BacklogSection today={today} />
     </div>
   )
 }

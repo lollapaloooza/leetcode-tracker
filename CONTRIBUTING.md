@@ -30,6 +30,7 @@ Find the first row that fits.
 | A practice rule: what to suggest, when a review is due, a stat | `src/lib/domain/<area>.ts` | `@/lib/domain` |
 | Something that changes saved state | an action in `src/lib/store/tracker-store.ts` | `@/lib/store` |
 | UI state that isn't saved (open dialogs, the current tab) | `src/lib/store/ui-store.ts` | `@/lib/store` |
+| A preference for this device only, not backed up (like what Start opens) | `src/lib/store/prefs-store.ts` | `@/lib/store` |
 | A React hook that knows nothing about the tracker | `src/lib/_hooks/useName.ts` | `@/lib/_hooks/useNow` |
 | A hook, constant or helper that only one feature uses | next to that feature, e.g. `src/components/today/` | relative import |
 | A view, dialog or sidebar section | `src/components/`, in its feature folder (`shell/`, `today/`, `sidebar/`, `settings/`, `command-palette/`) | `@/components/…` |
@@ -145,7 +146,7 @@ The dialog now lives in its own chunk, and it's preloaded once the page is idle.
 npx shadcn add <component>
 ```
 
-It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 552 kB (175 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
+It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 556 kB (176 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
 
 ### Refresh the problem list
 

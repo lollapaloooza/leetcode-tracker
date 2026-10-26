@@ -35,8 +35,7 @@ export function QueueList({ today, plan, order, ids }: QueueListProps) {
           return (
             <Fragment key={sid}>
               {order.bonusFrom === i && <BonusLine />}
-              {/* Right after a timed problem, "Do first" would change nothing. */}
-              <QueueRow sid={sid} problem={problem} item={itemFor(problem.id)} today={today} canDoFirst={!(order.timed && i === 0)} />
+              <QueueRow sid={sid} problem={problem} item={itemFor(problem.id)} today={today} />
             </Fragment>
           )
         })}

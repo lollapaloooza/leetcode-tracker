@@ -16,7 +16,7 @@ import {
   suggestNext,
   timerElapsed,
 } from '@/lib/domain'
-import type { Attempt, AttemptInput, GoalKind, PlanItem, Status, TrackerData } from '@/types'
+import type { Attempt, AttemptInput, GoalKind, PlanItem, Status, TimerState, TrackerData } from '@/types'
 import { exportable, normalize, STORAGE_VERSION } from './persistence'
 
 interface TrackerActions {
@@ -25,8 +25,15 @@ interface TrackerActions {
   undoAttempt: (key: string) => void
   markUndone: (id: number, today: string) => void
   setNote: (id: number, note: string) => void
+  /** Plan these problems on a day (taking them off the backlog) */
   addToPlan: (ids: number[], today: string) => void
-  removeFromPlan: (id: number, today: string) => void
+  /** Take a problem off a day's plan. Unless it was finished, it goes to the top of the backlog. */
+  removeFromPlan: (id: number, day: string) => void
+  /** Undo a removal: back into that day's plan at `index`, and off the backlog */
+  putBack: (id: number, day: string, index: number) => void
+  /** Drop a problem from the backlog; `addToBacklog` with its old index undoes it */
+  removeFromBacklog: (id: number) => void
+  addToBacklog: (id: number, index?: number) => void
   /** Put these problems first on that day, in this order (the rest keep their order after them) */
   reorderPlan: (date: string, ids: number[]) => void
   /** Postpone (or pull forward) an unfinished problem to another day's list */
@@ -44,6 +51,8 @@ interface TrackerActions {
   pauseTimer: () => void
   resumeTimer: () => void
   cancelTimer: () => void
+  /** Undo a stopped timer: put it back, unless another one has started since */
+  restoreTimer: (timer: TimerState) => void
   importData: (data: unknown) => void
 }
 
@@ -59,6 +68,17 @@ function withPlanItem(plans: TrackerData['plans'], day: string, id: number, patc
   else if (exists) next = plan.map((p) => (p.id === id ? { ...p, ...patch } : p))
   else next = [...plan, { id, done: false, ...patch }]
   return { ...plans, [day]: next }
+}
+
+/** Planning a problem takes it off the backlog. Returns the same array when nothing changes. */
+function offBacklog(backlog: number[], ...ids: number[]) {
+  return backlog.some((id) => ids.includes(id)) ? backlog.filter((id) => !ids.includes(id)) : backlog
+}
+
+function insertAt<T>(items: T[], index: number, item: T) {
+  const next = [...items]
+  next.splice(Math.max(0, Math.min(index, next.length)), 0, item)
+  return next
 }
 
 function omit<T>(record: Record<number, T>, id: number): Record<number, T> {
@@ -113,6 +133,7 @@ export const useTracker = create<TrackerState>()(
             notes: note ? { ...s.notes, [id]: note } : omit(s.notes, id),
             complexity: time || space ? { ...s.complexity, [id]: { time, space } } : omit(s.complexity, id),
             plans: withPlanItem(s.plans, today, id, { done: true, attempt: key }),
+            backlog: offBacklog(s.backlog, id),
             timer: s.timer?.id === id ? null : s.timer,
           }
         }),
@@ -140,14 +161,35 @@ export const useTracker = create<TrackerState>()(
           const plan = s.plans[today] ?? []
           const fresh = ids.filter((id) => !plan.some((p) => p.id === id))
           if (fresh.length === 0) return s
-          return { plans: { ...s.plans, [today]: [...plan, ...fresh.map((id) => ({ id, done: false }))] } }
+          return {
+            plans: { ...s.plans, [today]: [...plan, ...fresh.map((id) => ({ id, done: false }))] },
+            backlog: offBacklog(s.backlog, ...fresh),
+          }
         }),
 
-      removeFromPlan: (id, today) =>
-        set((s) => ({
-          plans: withPlanItem(s.plans, today, id, null),
-          timer: s.timer?.id === id ? null : s.timer,
-        })),
+      removeFromPlan: (id, day) =>
+        set((s) => {
+          const item = s.plans[day]?.find((p) => p.id === id)
+          if (!item) return s
+          return {
+            plans: withPlanItem(s.plans, day, id, null),
+            backlog: item.done ? s.backlog : [id, ...offBacklog(s.backlog, id)],
+            timer: s.timer?.id === id ? null : s.timer,
+          }
+        }),
+
+      putBack: (id, day, index) =>
+        set((s) => {
+          const plan = s.plans[day] ?? []
+          return {
+            plans: plan.some((p) => p.id === id) ? s.plans : { ...s.plans, [day]: insertAt(plan, index, { id, done: false }) },
+            backlog: offBacklog(s.backlog, id),
+          }
+        }),
+
+      removeFromBacklog: (id) => set((s) => ({ backlog: offBacklog(s.backlog, id) })),
+
+      addToBacklog: (id, index = 0) => set((s) => ({ backlog: insertAt(offBacklog(s.backlog, id), index, id) })),
 
       reorderPlan: (date, ids) =>
         set((s) => {
@@ -162,6 +204,7 @@ export const useTracker = create<TrackerState>()(
           const removed = withPlanItem(s.plans, from, id, null)
           return {
             plans: removed[to]?.some((p) => p.id === id) ? removed : withPlanItem(removed, to, id, {}),
+            backlog: offBacklog(s.backlog, id),
             timer: s.timer?.id === id ? null : s.timer,
           }
         }),
@@ -187,6 +230,7 @@ export const useTracker = create<TrackerState>()(
             notes: text ? { ...s.notes, [id]: text } : s.notes,
             // Watched it tonight — solve it yourself tomorrow while it's fresh.
             plans: s.plans[tomorrow]?.some((p) => p.id === id) ? s.plans : withPlanItem(s.plans, tomorrow, id, {}),
+            backlog: offBacklog(s.backlog, id),
           }
         }),
 
@@ -202,6 +246,7 @@ export const useTracker = create<TrackerState>()(
             restartId === null || s.plans[today]?.some((p) => p.id === restartId)
               ? s.plans
               : withPlanItem(s.plans, today, restartId, {}),
+          backlog: restartId === null ? s.backlog : offBacklog(s.backlog, restartId),
         })),
 
       dismissComeback: (today) => set({ comebackAt: today }),
@@ -213,6 +258,7 @@ export const useTracker = create<TrackerState>()(
         set((s) => ({
           timer: { id, startedAt: Date.now(), elapsed: 0 },
           plans: s.plans[today]?.some((p) => p.id === id) ? s.plans : withPlanItem(s.plans, today, id, {}),
+          backlog: offBacklog(s.backlog, id),
         })),
 
       pauseTimer: () =>
@@ -221,6 +267,8 @@ export const useTracker = create<TrackerState>()(
       resumeTimer: () => set((s) => (s.timer && s.timer.startedAt === null ? { timer: { ...s.timer, startedAt: Date.now() } } : s)),
 
       cancelTimer: () => set({ timer: null }),
+
+      restoreTimer: (timer) => set((s) => (s.timer ? s : { timer })),
 
       importData: (data) => set(normalize(data)),
     }),

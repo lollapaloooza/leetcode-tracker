@@ -1,13 +1,10 @@
-import { Fragment, type ReactNode } from 'react'
-import { CheckIcon, EllipsisIcon, ExternalLinkIcon, MonitorPlayIcon, PlayIcon, XIcon } from 'lucide-react'
+import { CheckIcon, ExternalLinkIcon, MonitorPlayIcon, PlayIcon, XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
-  DropdownMenuItem,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { leetcodeUrl, neetcodeUrl, videoUrl, type Problem } from '@/data/problems'
@@ -174,38 +171,5 @@ export function ComplexityTags({ complexity, className }: { complexity?: Complex
         </span>
       ))}
     </span>
-  )
-}
-
-
-export interface RowAction {
-  label: string
-  icon: ReactNode
-  onSelect: () => void
-  /** Draw a separator above this action */
-  separated?: boolean
-}
-
-/** The ⋯ menu at the end of a planned row: reorder, postpone, remove. */
-export function RowMenu({ title, actions }: { title: string; actions: RowAction[] }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={`More actions for ${title}`}>
-          <EllipsisIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-48">
-        {actions.map((a) => (
-          <Fragment key={a.label}>
-            {a.separated && <DropdownMenuSeparator />}
-            <DropdownMenuItem onSelect={a.onSelect}>
-              {a.icon}
-              {a.label}
-            </DropdownMenuItem>
-          </Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

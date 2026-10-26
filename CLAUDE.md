@@ -16,7 +16,7 @@ npm run check                                   # type-check + lint + tests; mus
 npx vitest run src/lib/domain/planning.test.ts  # one test file
 npx vitest run --project dom                    # only component tests (*.test.tsx, jsdom)
 npm run dev                                     # http://localhost:5173
-npm run build                                   # also prints chunk sizes; first load is ~552 kB (175 kB gzip)
+npm run build                                   # also prints chunk sizes; first load is ~556 kB (176 kB gzip)
 ```
 
 ## Rules
@@ -39,14 +39,19 @@ npm run build                                   # also prints chunk sizes; first
 ## Verifying UI changes
 
 - **Try it in the running app:** light and dark; phone, tablet and wide widths (the layout changes at `sm` and `lg`); and keyboard only (drag handles take ↑/↓).
-- **Clean up after:** browser checks write to localStorage under `leetcode-tracker` and `leetcode-tracker-theme`. Remove any test data.
+- **Clean up after:** browser checks write to localStorage under `leetcode-tracker`, `leetcode-tracker-theme` and `leetcode-tracker-prefs`. Remove any test data.
 
 ## Where things stand
 
-- **Cloud sync** (Firebase: Hosting, Google sign-in, Firestore) is designed in [ADR-002](docs/adr/0002-hosting-auth-sync.md), status Proposed. Next is its Phase 0:
+- **Cloud sync** (Firebase: Hosting, Google sign-in, Firestore) is designed in [ADR-002](docs/adr/0002-hosting-auth-sync.md), status Proposed. The owner's console steps are in [docs/firebase-setup.md](docs/firebase-setup.md); hosting and sign-in come next, once the owner sends the web config. Before sync itself, Phase 0:
   - make open tabs share one copy (they currently overwrite each other);
   - add `merge3()` with tests;
   - make the crash-screen reset clear the sync state.
 - **shadcn upgrade:** move the CLI to 4.22.x in early November 2026. It clears the remaining dev-only `npm audit` advisories.
 - **Layout redesign:** [ADR-004](docs/adr/0004-layout-redesign.md) is done: all five slices (Settings sheet, Now card and day heading, one-line rows with "Done today", tabs in the header, the phone layout). How the layout changes by width is in [architecture.md](docs/architecture.md#layout).
+- **Today's actions:** [ADR-005](docs/adr/0005-today-actions-and-backlog.md), done.
+  - Rows have Start and ✕, with no ⋯ menus.
+  - ✕ sends a problem to a saved `backlog`, with Undo in a toast.
+  - Start opens an optional LeetCode/NeetCode drawer, which this device can remember.
+  - Emptying the Now card keeps it empty until something starts.
 - **Open debt:** see [docs/tech-debt.md](docs/tech-debt.md).

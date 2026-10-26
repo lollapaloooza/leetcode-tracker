@@ -85,6 +85,8 @@ export interface TrackerData {
   attempts: Attempt[]
   studies: Study[]
   reviews: Record<number, ReviewState>
+  /** Problems taken off a plan to come back to later, newest first. Suggest leaves them alone. */
+  backlog: number[]
   /** One-line key idea per problem — the pattern cheat sheet */
   notes: Record<number, string>
   complexity: Record<number, Complexity>

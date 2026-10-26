@@ -3,6 +3,7 @@ import { ResultGlyph, StatusGlyph } from '@/components/problem-bits'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { Problem } from '@/data/problems'
 import { RESULT_LABEL } from '@/lib/_consts/labels'
+import { cn } from '@/lib/_utils/cn'
 import { useTracker, useUI } from '@/lib/store'
 import type { Attempt } from '@/types'
 
@@ -17,6 +18,8 @@ export function DoneMark({ problem, attempt, today }: DoneMarkProps) {
   const openLog = useUI((s) => s.openLog)
   const undoAttempt = useTracker((s) => s.undoAttempt)
   const markUndone = useTracker((s) => s.markUndone)
+  // Just logged: the mark pops in as the row lands here.
+  const justDone = useUI((s) => s.highlighted === problem.id)
 
   return (
     <DropdownMenu>
@@ -24,7 +27,7 @@ export function DoneMark({ problem, attempt, today }: DoneMarkProps) {
         <button
           type="button"
           aria-label={`${problem.title}: ${attempt ? RESULT_LABEL[attempt.result] : 'done'}. Edit or undo`}
-          className="grid size-6 place-items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn('grid size-6 place-items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50', justDone && 'animate-pop')}
         >
           {attempt ? <ResultGlyph result={attempt.result} /> : <StatusGlyph status="solved" />}
         </button>

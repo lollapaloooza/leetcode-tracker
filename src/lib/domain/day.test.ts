@@ -38,6 +38,11 @@ describe('dayOrder', () => {
     expect(dayOrder([item(easy, true), item(medium), item(hard)], 1, null)).toMatchObject({ goalMet: true, needed: 0, bonusFrom: null })
   })
 
+  it('can leave the spotlight empty until a problem is started', () => {
+    expect(dayOrder([item(easy), item(medium)], 2, null, false)).toMatchObject({ now: null, queue: [easy, medium], bonusFrom: null })
+    expect(dayOrder([item(easy), item(medium)], 2, medium, false)).toMatchObject({ now: medium, timed: true, queue: [easy] })
+  })
+
   it('has nothing up next when the plan is empty or finished', () => {
     expect(dayOrder([], 2, null)).toMatchObject({ now: null, queue: [], needed: 2 })
     expect(dayOrder([item(easy, true)], 1, null)).toMatchObject({ now: null, queue: [], goalMet: true })

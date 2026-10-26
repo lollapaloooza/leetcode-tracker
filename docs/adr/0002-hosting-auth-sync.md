@@ -251,6 +251,7 @@ Each record in local and remote is compared with the base:
 | `progress`, `reviews` | problem id | **If both sides logged attempts for that problem:** take the base's status and review, then replay every new attempt in `at` order with `statusAfter` / `nextReview`. Each replayed attempt's `prev` is rewritten from the replay too, so undo stays correct. **Otherwise:** the newer side wins. |
 | `notes`, `complexity` | problem id | The newer side wins. |
 | `plans` | day, then item id | Items added on either side are kept, and items removed on either side are removed. Each item's `done`/`attempt` comes from the side that changed it, or the newer side if both did. Order follows the newer side, with the other side's additions appended. |
+| `backlog` ([ADR-005](0005-today-actions-and-backlog.md)) | problem id | Ids added on either side are kept and ids removed on either side are removed, like plan items. Order follows the newer side. |
 | goals, `coreFirst`, `interview`, `comebackAt`, `timer` | field | The newer side wins. |
 
 - **"Newer side":** the side with the later `changedAt`, meaning the time of that device's last local change. Device clocks are trusted to agree within a few seconds. A wrong pick only matters when the same record changed on two devices while they were out of contact.
@@ -429,6 +430,8 @@ There's no paging; it's a personal app.
 3. [ ] Make the crash-screen reset also clear `leetcode-tracker-sync`.
 
 **Phase 1: hosting (about an hour; can ship before sync)**
+
+The owner's one-time console steps (project, web app, Google sign-in, database) are in [firebase-setup.md](../firebase-setup.md).
 
 4. [ ] Create the Firebase project (Spark), add `firebase.json` and `npm run deploy`, and check the headers.
 5. [ ] Until Phase 2 ships, the only backup is Export, and Safari can wipe a site's storage after 7 days without a visit.

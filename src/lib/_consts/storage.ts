@@ -5,4 +5,5 @@
 export const STORAGE_KEYS = {
   tracker: 'leetcode-tracker',
   theme: 'leetcode-tracker-theme',
+  prefs: 'leetcode-tracker-prefs',
 } as const

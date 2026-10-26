@@ -9,7 +9,7 @@ import { timerElapsed } from './timer'
 export interface DayOrder {
   /** Finished today, in plan order */
   done: PlanItem[]
-  /** The problem in the spotlight: the one being timed, else the first unfinished one */
+  /** The problem in the spotlight: the one being timed, else the first unfinished one (unless told not to pick) */
   now: number | null
   /** Whether `now` has a timer on it, running or paused */
   timed: boolean
@@ -22,11 +22,15 @@ export interface DayOrder {
   bonusFrom: number | null
 }
 
-export function dayOrder(plan: PlanItem[], goal: number, timerId: number | null): DayOrder {
+/**
+ * `pickNext: false` leaves the spotlight empty unless a timer runs — after you take a problem out of
+ * it, the next one waits in the queue for you to choose it, instead of jumping in.
+ */
+export function dayOrder(plan: PlanItem[], goal: number, timerId: number | null, pickNext = true): DayOrder {
   const done = plan.filter((p) => p.done)
   const open = plan.filter((p) => !p.done).map((p) => p.id)
   const timed = timerId !== null && open.includes(timerId)
-  const now = timed ? timerId : (open[0] ?? null)
+  const now = timed ? timerId : pickNext ? (open[0] ?? null) : null
   const queue = open.filter((id) => id !== now)
   const needed = Math.max(goal - done.length, 0)
   const goalMet = needed === 0

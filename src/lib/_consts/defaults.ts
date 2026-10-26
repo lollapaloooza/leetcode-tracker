@@ -11,6 +11,7 @@ export const TRACKER_DEFAULTS: TrackerData = {
   attempts: [],
   studies: [],
   reviews: {},
+  backlog: [],
   notes: {},
   complexity: {},
   interview: null,

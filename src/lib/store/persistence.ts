@@ -102,6 +102,7 @@ export function normalize(raw: unknown): TrackerData {
     studies: arrayOf(r.studies, isStudy),
     // v1 had no reviews: start a schedule for everything already solved.
     reviews: isRecord(r.reviews) ? byProblem(r.reviews, isReview) : backfillReviews(progress),
+    backlog: [...new Set(arrayOf(r.backlog, isInt))],
     notes: byProblem(r.notes, isString),
     complexity: byProblem(r.complexity, isComplexity),
     interview: isInterview(r.interview) ? r.interview : null,
@@ -120,8 +121,8 @@ function backfillReviews(progress: TrackerData['progress']): TrackerData['review
 
 /** Everything worth backing up (a running timer isn't). */
 export function exportable(s: TrackerData): Omit<TrackerData, 'timer'> {
-  const { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, notes, complexity, interview, comebackAt } = s
-  return { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, notes, complexity, interview, comebackAt }
+  const { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, backlog, notes, complexity, interview, comebackAt } = s
+  return { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, backlog, notes, complexity, interview, comebackAt }
 }
 
 /** Does a file look like one of our backups at all? (Its contents are still checked by `normalize`.) */

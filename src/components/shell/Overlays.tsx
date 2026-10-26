@@ -2,6 +2,7 @@ import { LogAttemptDialog } from '@/components/LogAttemptDialog'
 import { lazyComponent } from '@/lib/_utils/lazy'
 import { useUI } from '@/lib/store'
 import { MountWhenOpened } from './MountWhenOpened'
+import { Toaster } from './Toaster'
 import { usePaletteShortcut } from './usePaletteShortcut'
 
 // Not needed for the first screen: each loads in its own chunk, in the background after startup.
@@ -11,8 +12,9 @@ const PythonSheet = lazyComponent(() => import('@/components/PythonSheet').then(
 const ShortOnTimeDialog = lazyComponent(() => import('@/components/ShortOnTimeDialog').then((m) => m.ShortOnTimeDialog))
 const CalendarDialog = lazyComponent(() => import('@/components/CalendarDialog').then((m) => m.CalendarDialog))
 const SettingsSheet = lazyComponent(() => import('@/components/settings/SettingsSheet').then((m) => m.SettingsSheet))
+const StartSheet = lazyComponent(() => import('@/components/timer/StartSheet').then((m) => m.StartSheet))
 
-/** Dialogs and drawers. Each lazy one mounts the first time it opens, so its code loads only when needed. */
+/** Dialogs, drawers and the toast. Each lazy one mounts the first time it opens, so its code loads only when needed. */
 export function Overlays({ today }: { today: string }) {
   const paletteOpen = useUI((s) => s.paletteOpen)
   const detailOpen = useUI((s) => s.detailFor !== null)
@@ -20,6 +22,7 @@ export function Overlays({ today }: { today: string }) {
   const shortOnTimeOpen = useUI((s) => s.shortOnTimeOpen)
   const calendarOpen = useUI((s) => s.calendarOpen)
   const settingsOpen = useUI((s) => s.settingsOpen)
+  const startOpen = useUI((s) => s.startFor !== null)
   usePaletteShortcut()
 
   return (
@@ -40,10 +43,14 @@ export function Overlays({ today }: { today: string }) {
       <MountWhenOpened open={settingsOpen}>
         <SettingsSheet today={today} />
       </MountWhenOpened>
+      <MountWhenOpened open={startOpen}>
+        <StartSheet today={today} />
+      </MountWhenOpened>
       {/* After Settings, so the calendar dialog it opens stacks on top. */}
       <MountWhenOpened open={calendarOpen}>
         <CalendarDialog />
       </MountWhenOpened>
+      <Toaster />
     </>
   )
 }

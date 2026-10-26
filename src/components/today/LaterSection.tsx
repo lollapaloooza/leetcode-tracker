@@ -4,7 +4,7 @@ import { formatDay } from '@/lib/_utils/date'
 import { laterPlans } from '@/lib/domain'
 import { useTracker } from '@/lib/store'
 import { PlanRow } from './PlanRow'
-import { laterActions } from './today-actions'
+import { removeFromDay } from './plan-actions'
 
 /** Problems put off past tomorrow (like a Hard saved for Saturday), so they don't vanish from view. */
 export function LaterSection({ today }: { today: string }) {
@@ -22,7 +22,12 @@ export function LaterSection({ today }: { today: string }) {
         {later.map(({ day, id }) => {
           const problem = problemById.get(id)
           return problem ? (
-            <PlanRow key={`${day}:${id}`} problem={problem} meta={`${formatDay(day)} · ${problem.topic}`} actions={laterActions(problem, day, today)} />
+            <PlanRow
+              key={`${day}:${id}`}
+              problem={problem}
+              meta={`${formatDay(day)} · ${problem.topic}`}
+              remove={{ label: `Remove ${problem.title} from ${formatDay(day)}`, onRemove: () => removeFromDay(problem, day) }}
+            />
           ) : null
         })}
       </ul>

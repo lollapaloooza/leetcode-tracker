@@ -16,17 +16,21 @@ interface NowCardProps {
   bonus: boolean
 }
 
-/** The one problem to work on now — being timed, or up next — with the clock and the next step. */
+/**
+ * The one problem to work on now — being timed, or up next — with the clock and the next step.
+ * Keyed by problem, so a new one rises in.
+ */
 export function NowCard({ problem, today, bonus }: NowCardProps) {
   const now = useNowCard(problem, today)
   const isReview = useTracker((s) => isSolved(s.progress[problem.id]?.status))
   const titleId = useId()
 
   return (
-    <section aria-labelledby={titleId} className="overflow-hidden rounded-xl bg-card ring-1 ring-primary/40">
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 pt-5 pb-4 max-sm:px-4">
-        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-2">
-          <p className="flex flex-wrap items-center gap-x-2 text-[13px] text-muted-foreground">
+    <section aria-labelledby={titleId} className="animate-rise overflow-hidden rounded-xl bg-card ring-1 ring-primary/55 max-sm:rounded-2xl">
+      {/* Title on the left, the clock on the right; on phones the clock sits under the title. */}
+      <div className="flex items-start justify-between gap-8 px-6 pt-5 pb-4.5 max-sm:flex-col max-sm:gap-1.5 max-sm:px-4 max-sm:pt-3.5 max-sm:pb-3">
+        <div className="flex min-w-0 flex-col gap-2 max-sm:gap-1.5">
+          <p className="flex flex-wrap items-center gap-x-2 text-[13px] text-muted-foreground max-sm:text-xs">
             <StatusLabel state={now.state} />
             <span aria-hidden>·</span>
             {problem.topic}
@@ -34,18 +38,19 @@ export function NowCard({ problem, today, bonus }: NowCardProps) {
             {isReview ? 'Review' : 'New'}
             {bonus && <span className="rounded-full bg-muted px-2 text-xs font-medium">Bonus</span>}
           </p>
-          <h2 id={titleId} className="min-w-0 text-xl leading-tight font-semibold tracking-tight">
+          <h2 id={titleId} className="min-w-0 text-[22px] leading-tight font-semibold tracking-tight max-sm:text-[19px]">
             <ProblemTitle problem={problem} className="max-w-full" />
           </h2>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          {/* Phones skip it: the time box under the title already says how big it is. */}
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground max-sm:hidden">
             <DifficultyDot difficulty={problem.difficulty} />
             {problem.difficulty}
           </span>
         </div>
         <NowClock problem={problem} timer={now.timer} />
       </div>
-      {now.timer && <NowProgress problem={problem} timer={now.timer} />}
-      <NowActions problem={problem} today={today} now={now} />
+      <NowProgress problem={problem} timer={now.timer} className="max-sm:h-[3px]" />
+      <NowActions problem={problem} now={now} />
     </section>
   )
 }

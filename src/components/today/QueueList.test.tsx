@@ -1,20 +1,19 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DndContext } from '@dnd-kit/core'
-import { openInNewTab } from '@/lib/_utils/browser'
 import { dayOrder } from '@/lib/domain'
-import { useTracker } from '@/lib/store'
+import { useTracker, useUI } from '@/lib/store'
 import { idOf } from '@/test/builders'
 import { resetStores } from '@/test/stores'
 import type { PlanItem } from '@/types'
 import { sortableId } from './board-lists'
 import { QueueList } from './QueueList'
 
-vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn() }))
+vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn(), prefersMotion: () => false }))
 
 const today = '2026-10-26'
-const [twoSum, lru] = ['Two Sum', 'LRU Cache'].map(idOf)
+const [twoSum, lru, mergeK] = ['Two Sum', 'LRU Cache', 'Merge K Sorted Lists'].map(idOf)
 
 function renderQueue(plan: PlanItem[], timerId: number | null = null) {
   resetStores({ plans: { [today]: plan }, weekdayGoal: 1, timer: timerId === null ? null : { id: timerId, startedAt: null, elapsed: 0 } })
@@ -25,49 +24,30 @@ function renderQueue(plan: PlanItem[], timerId: number | null = null) {
     </DndContext>,
   )
 }
-const openMenu = async (title: string) => {
-  await userEvent.setup().click(screen.getByRole('button', { name: `More actions for ${title}` }))
-  return screen.findByRole('menu')
-}
 
 describe('QueueList', () => {
-  beforeAll(() => vi.mocked(openInNewTab).mockClear())
-
-  it('keeps each row to one line: no link buttons, just Start and ⋯', () => {
+  it('keeps each row to one line: Start and ✕, no links', () => {
     renderQueue([{ id: lru, done: false }, { id: twoSum, done: false }])
     const row = screen.getByRole('button', { name: 'Two Sum' }).closest('li')!
     expect(within(row).getByRole('button', { name: 'Start Two Sum' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Remove Two Sum from today' })).toBeInTheDocument()
     expect(within(row).queryByRole('link')).not.toBeInTheDocument()
     expect(row).toHaveTextContent('Arrays & Hashing · New')
   })
 
-  it("puts the problem's links, and everything else, in ⋯", async () => {
-    renderQueue([{ id: lru, done: false }, { id: twoSum, done: false }])
-    const menu = await openMenu('Two Sum')
-    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Start',
-      'Do first',
-      'Move to tomorrow',
-      'Move to Saturday',
-      'Open on LeetCode',
-      'Open on NeetCode',
-      'Watch solution video',
-      'Remove from today',
-    ])
+  it('sets a problem aside in the backlog, and Undo puts it back in its place', async () => {
+    renderQueue([{ id: lru, done: false }, { id: twoSum, done: false }, { id: mergeK, done: false }])
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Remove Two Sum from today' }))
+    expect(useTracker.getState().plans[today].map((p) => p.id)).toEqual([lru, mergeK])
+    expect(useTracker.getState().backlog).toEqual([twoSum])
 
-    await userEvent.setup().click(within(menu).getByRole('menuitem', { name: 'Open on LeetCode' }))
-    expect(openInNewTab).toHaveBeenCalledWith('https://leetcode.com/problems/two-sum/')
+    useUI.getState().toast!.action!.run()
+    expect(useTracker.getState().plans[today].map((p) => p.id)).toEqual([lru, twoSum, mergeK])
+    expect(useTracker.getState().backlog).toEqual([])
   })
 
-  it('"Do first" makes a problem the one up next', async () => {
-    renderQueue([{ id: lru, done: false }, { id: twoSum, done: false }])
-    await userEvent.setup().click(within(await openMenu('Two Sum')).getByRole('menuitem', { name: 'Do first' }))
-    expect(useTracker.getState().plans[today].map((p) => p.id)).toEqual([twoSum, lru])
-  })
-
-  it('offers no Start while another problem is being timed', async () => {
+  it('offers no Start while another problem is being timed', () => {
     renderQueue([{ id: lru, done: false }, { id: twoSum, done: false }], lru)
     expect(screen.queryByRole('button', { name: 'Start Two Sum' })).not.toBeInTheDocument()
-    expect(within(await openMenu('Two Sum')).queryByRole('menuitem', { name: 'Start' })).not.toBeInTheDocument()
   })
 })

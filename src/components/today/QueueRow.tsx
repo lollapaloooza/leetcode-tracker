@@ -1,11 +1,10 @@
 import { RotateCcwIcon } from 'lucide-react'
 import { StartButton } from '@/components/timer/StartButton'
 import type { Problem } from '@/data/problems'
-import { useTracker } from '@/lib/store'
 import type { PlanItem } from '@/types'
 import { LogCircle } from './LogCircle'
+import { removeFromDay } from './plan-actions'
 import { PlanRow } from './PlanRow'
-import { queueActions } from './today-actions'
 import { useSortableRow } from './useSortableRow'
 import { useTodayRow } from './useTodayRow'
 
@@ -14,15 +13,12 @@ interface QueueRowProps {
   problem: Problem
   item: PlanItem
   today: string
-  /** Offer "Do first" — not for the problem already right after the one being timed */
-  canDoFirst: boolean
 }
 
-/** A problem still to do today: drag it, log it, start it; everything else is in ⋯. */
-export function QueueRow({ sid, problem, item, today, canDoFirst }: QueueRowProps) {
+/** A problem still to do today: drag it, log it, start it, or set it aside in the backlog. */
+export function QueueRow({ sid, problem, item, today }: QueueRowProps) {
   const sortable = useSortableRow(sid)
   const { isReview } = useTodayRow(problem, item)
-  const canStart = useTracker((s) => s.timer === null)
 
   return (
     <PlanRow
@@ -41,9 +37,8 @@ export function QueueRow({ sid, problem, item, today, canDoFirst }: QueueRowProp
           )}
         </>
       }
-      // On phones, Start is in ⋯ so the row stays one line.
-      trailing={<StartButton problem={problem} today={today} className="max-sm:hidden" />}
-      actions={queueActions(problem, today, { canStart, canDoFirst })}
+      trailing={<StartButton problem={problem} today={today} />}
+      remove={{ label: `Remove ${problem.title} from today`, onRemove: () => removeFromDay(problem, today) }}
     />
   )
 }

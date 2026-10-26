@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { ArrowLeftIcon, ChevronRightIcon, MonitorPlayIcon, RotateCcwIcon } from 'lucide-react'
+import { beginTimer } from '@/components/timer/start-problem'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
@@ -87,7 +88,7 @@ function ShortOnTimeBody({ today, onDone }: { today: string; onDone: () => void 
     if (!picks.review) return
     const s = useTracker.getState()
     s.addToPlan([picks.review.problem.id], today)
-    if (!s.timer) s.startTimer(picks.review.problem.id, today)
+    if (!s.timer) beginTimer(picks.review.problem.id, today)
     setTab('today')
     onDone()
   }

@@ -1,6 +1,7 @@
 import { CalendarClockIcon, ExternalLinkIcon, HistoryIcon, PencilLineIcon, PlayIcon, PlusIcon, TimerIcon, XIcon } from 'lucide-react'
 import { StatusGlyph } from '@/components/problem-bits'
 import { CommandGroup, CommandItem } from '@/components/ui/command'
+import { beginTimer } from '@/components/timer/start-problem'
 import { leetcodeUrl, neetcodeUrl, videoUrl, type Problem } from '@/data/problems'
 import { STATUSES } from '@/lib/_consts/enums'
 import { STATUS_LABEL } from '@/lib/_consts/labels'
@@ -65,7 +66,7 @@ function PlanCommands({ problem, today, run }: Omit<ProblemCommandsProps, 'onBac
           value="start timer"
           onSelect={() =>
             run(() => {
-              t.startTimer(problem.id, today)
+              beginTimer(problem.id, today)
               ui.setTab('today')
             })
           }

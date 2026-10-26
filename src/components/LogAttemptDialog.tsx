@@ -84,6 +84,7 @@ function LogForm({ target, today, onDone }: { target: LogTarget; today: string; 
     const { undoAttempt, logAttempt } = useTracker.getState()
     if (initial.editing) undoAttempt(initial.editing.key)
     logAttempt(target.id, { seconds, result, confidence, note, time, space }, today)
+    useUI.getState().highlight(target.id)
     onDone()
   }
 

@@ -1,10 +1,11 @@
 import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
-import { useTracker, useUI } from '@/lib/store'
+import { usePrefs, useTracker, useUI } from '@/lib/store'
 import type { TrackerData } from '@/types'
 
-/** A fresh start for a component test: default data plus `data`, and every dialog closed. */
+/** A fresh start for a component test: default data plus `data`, every dialog closed, default preferences. */
 export function resetStores(data: Partial<TrackerData> = {}) {
   // Merge rather than replace, so the tracker keeps its actions.
   useTracker.setState({ ...TRACKER_DEFAULTS, ...data })
   useUI.setState(useUI.getInitialState(), true)
+  usePrefs.setState(usePrefs.getInitialState(), true)
 }

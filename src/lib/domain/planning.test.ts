@@ -103,6 +103,11 @@ describe('suggestNext', () => {
     ])
   })
 
+  it('leaves alone what you set aside in the backlog', () => {
+    const backlogged = { ...s, backlog: [idOf('Two Sum'), idOf('Group Anagrams')] }
+    expect(titles(suggestNext(backlogged, [], 3, today))).toEqual(['Valid Anagram', 'Top K Frequent Elements', 'Encode and Decode Strings'])
+  })
+
   it('takes the oldest due review when it may only pick one', () => {
     expect(titles(suggestNext(s, [], 1, today))).toEqual(['Two Sum'])
   })

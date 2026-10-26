@@ -4,6 +4,7 @@ import { AppearanceSettings } from './AppearanceSettings'
 import { BackupSettings } from './BackupSettings'
 import { InterviewSettings } from './InterviewSettings'
 import { RoutineSettings } from './RoutineSettings'
+import { StartSettings } from './StartSettings'
 
 /** What you set once and rarely touch, kept out of the daily view. */
 export function SettingsSheet({ today }: { today: string }) {
@@ -16,11 +17,12 @@ export function SettingsSheet({ today }: { today: string }) {
       <SheetContent className="gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Settings</SheetTitle>
-          <SheetDescription className="sr-only">Your routine, interview date, theme and backups</SheetDescription>
+          <SheetDescription className="sr-only">Your routine, interview date, what Start opens, theme and backups</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-6">
           <RoutineSettings />
           <InterviewSettings today={today} />
+          <StartSettings />
           <AppearanceSettings />
           <BackupSettings />
         </div>

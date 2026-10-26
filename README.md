@@ -32,13 +32,15 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
 - **Today:** pick problems, or press **Suggest** for due reviews first and then the next new ones. Time each one against an interview target (Easy 15, Medium 25, Hard 40 min), then log the attempt: the result, your confidence and the key idea. Pick **Tomorrow**'s problems the night before, so after work you only press Start.
 - **Priority:** the list order is the priority.
   - Drag a row by its grip to reorder it, or across into Tomorrow and back. From the keyboard, focus the grip and press ↑/↓. On a phone, hold a row for a moment, then drag.
-  - Each row's ⋯ menu has **Start**, **Do first**, **Move to tomorrow**, **Move to Saturday** (for a Hard that deserves the weekend session), the LeetCode / NeetCode / video links, and **Remove**.
+  - Each row has just **Start** and **✕**. ✕ sets the problem aside in the **Backlog**, with **Undo** in a toast for a few seconds.
   - Problems put off past tomorrow show under **Later**.
 - **Now:** the day opens with its date, how many are done, and about how many minutes the goal still needs. Below it, one card holds the problem to work on:
-  - **Up next**, with **Start**, which starts the timer and opens the problem on LeetCode (or on NeetCode when LeetCode needs Premium);
-  - once started, a big clock against the time box, **Done — log attempt**, and Pause;
+  - **Up next**, with **Start**. Start asks whether to open the problem on LeetCode or NeetCode; close the drawer to start only the timer, or tick **Remember my choice** to skip the question next time;
+  - once started, a big clock against the time box, **Done — log attempt**, Pause, links back to the problem and its solution video, and ⏹ to stop the timer and keep the problem for later;
+  - take the problem out of the card (✕ or ⏹) and the card stays empty until you start the next one yourself;
   - on other tabs the timer stays in sight: a pill in the header, or on phones a bar above the tab bar with Pause and Log. The browser tab's title shows it too while you're on LeetCode.
 - **Then:** the rest of today's problems, one line each, in order. Due reviews are a link above the list that adds as many as the goal has room for.
+- **Backlog:** problems you took off a plan, kept in view so they aren't lost. Suggest skips them; **+ Today** brings one back.
 - **Done today:** finished problems fold into their own group: how each went, the minutes against its time box, and when it comes back for review.
 - **Daily goal line:** a **Bonus** line marks where today's goal ends (1 problem on weekdays, 3 on weekends by default). The day is done when the goal is, and anything below the line is extra.
 - **Short on time?** One task of about 20 minutes:
@@ -57,7 +59,7 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
   - separate weekday and weekend amounts, and **Core 150 first** for Suggest;
   - **Add to calendar** downloads an .ics file with recurring practice blocks and a 5-minute reminder.
 - **Layout:** on wide screens the tabs sit in the header and the sidebar beside the list. Below laptop width the sidebar's cards move to the top of the Progress tab, and phones get a tab bar at the bottom.
-- **Settings** (the gear in the header): the routine above, the interview date, the theme (System, Light or Dark) and backups.
+- **Settings** (the gear in the header): the routine above, the interview date, what Start opens, the theme (System, Light or Dark) and backups.
 - **⌘K:** find any problem and act on it: add it to today, start the timer, log an attempt, open it on LeetCode or NeetCode or watch the video, or set its status.
 - **Python:** a slide-out cheatsheet of Python for LeetCode, with the JavaScript equivalent next to each item.
 

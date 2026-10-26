@@ -7,7 +7,7 @@ import { cn } from '@/lib/_utils/cn'
 import { formatDay } from '@/lib/_utils/date'
 import { problemIdOf } from './board-lists'
 import { PlanRow } from './PlanRow'
-import { tomorrowActions } from './today-actions'
+import { removeFromDay } from './plan-actions'
 import { useSortableRow } from './useSortableRow'
 import { useTomorrow } from './useTomorrow'
 import { useZone } from './useZone'
@@ -45,7 +45,7 @@ export function TomorrowSection({ today, ids }: { today: string; ids: string[] }
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             {ids.map((sid) => {
               const problem = problemById.get(problemIdOf(sid))
-              return problem ? <TomorrowRow key={sid} sid={sid} problem={problem} today={today} reason={tomorrow.reasonFor(problem.id)} /> : null
+              return problem ? <TomorrowRow key={sid} sid={sid} problem={problem} day={tomorrow.tomorrow} reason={tomorrow.reasonFor(problem.id)} /> : null
             })}
           </SortableContext>
         </ul>
@@ -57,11 +57,11 @@ export function TomorrowSection({ today, ids }: { today: string; ids: string[] }
 interface TomorrowRowProps {
   sid: string
   problem: Problem
-  today: string
+  day: string
   reason: { text: string; highlight: boolean }
 }
 
-function TomorrowRow({ sid, problem, today, reason }: TomorrowRowProps) {
+function TomorrowRow({ sid, problem, day, reason }: TomorrowRowProps) {
   const sortable = useSortableRow(sid)
   return (
     <PlanRow
@@ -72,7 +72,7 @@ function TomorrowRow({ sid, problem, today, reason }: TomorrowRowProps) {
           {problem.topic} <span aria-hidden>·</span> <span className={cn(reason.highlight && 'text-link')}>{reason.text}</span>
         </>
       }
-      actions={tomorrowActions(problem, today)}
+      remove={{ label: `Remove ${problem.title} from tomorrow`, onRemove: () => removeFromDay(problem, day) }}
     />
   )
 }

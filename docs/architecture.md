@@ -1,6 +1,6 @@
 # Architecture
 
-How the app works today. Why it's built this way is recorded in the ADRs ([001](adr/0001-code-structure.md), [002](adr/0002-hosting-auth-sync.md), [003](adr/0003-lib-layout.md)); where to put new code is in [CONTRIBUTING.md](../CONTRIBUTING.md).
+How the app works today. Why it's built this way is recorded in the ADRs ([001](adr/0001-code-structure.md), [002](adr/0002-hosting-auth-sync.md), [003](adr/0003-lib-layout.md), [004](adr/0004-layout-redesign.md), [005](adr/0005-today-actions-and-backlog.md)); where to put new code is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Overview
 
@@ -50,6 +50,7 @@ One `TrackerData` object ([`src/types/tracker.ts`](../src/types/tracker.ts)). Pr
 | `studies[]` | "Watch & note" sessions: practice that doesn't mark the problem solved |
 | `reviews[id]` | SRS state: step in the 3 → 7 → 21 → 60-day ladder, and the next due date |
 | `plans[day]` | Ordered list of `{ id, done, attempt? }` per day; past days are kept as history |
+| `backlog[]` | Problems taken off a plan to come back to, newest first. Suggest skips them; planning one takes it off. |
 | `notes[id]`, `complexity[id]` | The key idea, and time/space Big-O as typed |
 | `weekdayGoal`, `weekendGoal`, `weeklyDays`, `coreFirst` | Routine settings |
 | `interview` | Target date, plus the solved count when it was set (the start of the pace line) |
@@ -100,7 +101,8 @@ Backups and saves share one shape and one validator.
 | Store | Persisted | Holds |
 |---|---|---|
 | `useTracker` | Yes, localStorage | `TrackerData` plus the actions that change it |
-| `useUI` | No | Current tab, which dialog, drawer or sheet is open (including Settings), the log-attempt target |
+| `useUI` | No | Current tab; which dialog, drawer or sheet is open (Settings, the Start drawer); the log-attempt target; the toast; the row that just landed (it glows); and whether the Now card was emptied today |
+| `usePrefs` | Yes, `leetcode-tracker-prefs`, this device only | What Start opens: ask, LeetCode, NeetCode, or only the timer. Never backed up or synced. |
 
 **Today's order.** `dayOrder()` in [`domain/day.ts`](../src/lib/domain/day.ts) turns the plan, the goal and the timer into what the Today screen shows:
 
@@ -136,10 +138,23 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 - **Away from Today:** [`useAwayTimer`](../src/components/shell/useAwayTimer.ts) decides when the pill and the NowBar show. Both mount when they appear, so their clocks start from the current time. The NowBar reuses the Now card's `useNowCard` and `useNowClock`.
 - **Drag sensors:** `PointerSensor` starts from the grip and `TouchSensor` (a 250 ms hold, 5 px of give) from anywhere on the row; `useSortableRow` splits dnd-kit's listeners between the two. Phones hide the grip, so a quick swipe scrolls and a hold picks the row up.
 
+## Today's actions
+
+[ADR-005](adr/0005-today-actions-and-backlog.md) has the reasons; this is how they fit together.
+
+- **Start:** every Start button calls `requestStart()` ([`timer/start-problem.ts`](../src/components/timer/start-problem.ts)).
+  - It opens the Start drawer, or uses the answer this device remembered.
+  - `startProblem()` starts the timer and opens the chosen site from the click itself, so browsers don't treat the tab as a popup.
+  - All timer starts go through `beginTimer()`, which also refills an emptied Now card.
+- **Removing and undoing:** [`today/plan-actions.ts`](../src/components/today/plan-actions.ts) holds what a ✕ or ⏹ does.
+  - It changes the store, then shows a toast whose Undo restores the old state: the plan position, the timer, or the backlog position.
+  - Rows play their exit animation first (`useRowExit`), and only then call the action.
+- **The Now slot:** `dayOrder(plan, goal, timerId, pickNext)` picks the problem in the spotlight. `useDayPlan` passes `pickNext = false` after the card was emptied by hand today, so the card stays empty until something starts.
+
 ## Loading
 
-- **First load:** about 552 kB of JavaScript (175 kB gzipped).
-- **What's split out:** anything not needed for the first screen goes into its own chunk through `lazyComponent()` ([`_utils/lazy.ts`](../src/lib/_utils/lazy.ts)): History, Patterns, ⌘K, the problem drawer, the Python sheet, the Settings sheet, the short-on-time and calendar dialogs, and the date picker (72 kB on its own).
+- **First load:** about 556 kB of JavaScript (176 kB gzipped).
+- **What's split out:** anything not needed for the first screen goes into its own chunk through `lazyComponent()` ([`_utils/lazy.ts`](../src/lib/_utils/lazy.ts)): History, Patterns, ⌘K, the problem drawer, the Python sheet, the Settings sheet, the short-on-time and calendar dialogs, the Start drawer, and the date picker (72 kB on its own).
 - **When it loads:** each chunk registers a preloader, and `App` runs them all once the browser is idle. In practice, nothing waits on the network when you open it. A failed load is retried the next time.
 - **How dialogs mount:** `MountWhenOpened` ([`shell/Overlays.tsx`](../src/components/shell/Overlays.tsx)) mounts a lazy dialog the first time it opens, and keeps it mounted so the close animation still plays.
 - **Shortcuts:** they live outside the lazy part. The ⌘K listener (`usePaletteShortcut`) is registered by `Overlays`, so it works before the palette's code has arrived.
@@ -156,7 +171,7 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 Tests sit next to the code they cover, in two Vitest projects:
 
 - **`unit` (`*.test.ts`, Node):** `_consts` (enum lists against their labels), `_utils` (dates, .ics), `domain` (SRS, status, planning, insights) and `store/persistence` (`normalize`, export, backup parsing).
-- **`dom` (`*.test.tsx`, jsdom + Testing Library):** components and hooks, tested the way they're used — by role and accessible name, through clicks and keys, asserting on the screen and the stores. Covered: the layout by width (`App`), the shell (header tabs, phone tab bar, timer pill, NowBar), Settings, the sidebar, the command palette, the Today view (Now card, heading, queue, keyboard and long-press reordering), `useTheme`, `useMediaQuery` and `useRetained`.
+- **`dom` (`*.test.tsx`, jsdom + Testing Library):** components and hooks, tested the way they're used — by role and accessible name, through clicks and keys, asserting on the screen and the stores. Covered: the layout by width (`App`), the shell (header tabs, phone tab bar, timer pill, NowBar), Settings, the sidebar, the command palette, the Today view (Now card, heading, queue, keyboard and long-press reordering, the empty Now card, the backlog), the Start drawer and toasts, `useTheme`, `useMediaQuery` and `useRetained`. Store actions and preferences have unit tests too.
 - **Support:** [`src/test/builders.ts`](../src/test/builders.ts) builds test data (`idOf`, `attempt`, `progressOf`, `tracker`); [`src/test/stores.ts`](../src/test/stores.ts) resets both stores; [`src/test/setup-dom.ts`](../src/test/setup-dom.ts) gives each component test a clean DOM, storage and stores, plus the browser APIs jsdom lacks.
 - **Not covered yet:** pointer dragging, the other views and dialogs, and store actions on their own. They get tests as later slices of [ADR-004](adr/0004-layout-redesign.md) touch them; end-to-end tests are planned.
 

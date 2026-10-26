@@ -208,6 +208,66 @@
     }
 }
 
+/* Small motions: rows leaving and landing, the Now card swapping in, toasts and their time left.
+   The reduced-motion rule below shortens them all to nothing. */
+@theme {
+  --animate-row-out: row-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-arrive: arrive 1.4s ease-out;
+  --animate-rise: rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-toast-in: toast-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-toast-timer: toast-timer 5s linear both;
+
+  @keyframes row-out {
+    0% {
+      opacity: 1;
+      max-height: 4.5rem;
+    }
+    50% {
+      opacity: 0;
+      transform: translateX(1rem);
+      max-height: 4.5rem;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(1rem);
+      max-height: 0;
+      min-height: 0;
+      padding-block: 0;
+    }
+  }
+  @keyframes arrive {
+    from {
+      background-color: color-mix(in oklab, var(--color-primary) 18%, transparent);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(0.5);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+  @keyframes toast-timer {
+    to {
+      transform: scaleX(0);
+    }
+  }
+}
+
 /* Progress bars fill in from empty on first paint */
 @keyframes progress-in {
   from {

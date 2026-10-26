@@ -59,6 +59,11 @@ describe('normalize', () => {
     expect(data.complexity).toEqual({ [idOf('Two Sum')]: { time: 'O(n)', space: 'O(n)' } })
   })
 
+  it('keeps the backlog as unique problem ids, in order', () => {
+    expect(normalize({ backlog: [5, 'x', 7, 5, 1.5, null, 9] }).backlog).toEqual([5, 7, 9])
+    expect(normalize({ backlog: 'none' }).backlog).toEqual([])
+  })
+
   it('survives a field of the wrong type — the crash this guards against', () => {
     const data = normalize({ progress: {}, plans: {}, attempts: {}, studies: 'none', reviews: [], notes: null })
     expect(data.attempts).toEqual([])
@@ -93,6 +98,7 @@ describe('normalize', () => {
       plans: { '2026-10-20': [{ id: idOf('Two Sum'), done: false }] },
       attempts: [attempt('Two Sum', '2026-10-20')],
       reviews: { [idOf('Two Sum')]: { step: 0, due: '2026-10-23' } },
+      backlog: [idOf('Group Anagrams'), idOf('LRU Cache')],
     })
     expect(normalize(JSON.parse(JSON.stringify(exportable(data))))).toEqual(data)
   })

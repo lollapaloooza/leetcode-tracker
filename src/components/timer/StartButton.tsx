@@ -3,9 +3,8 @@ import { Button } from '@/components/ui/button'
 import type { Problem } from '@/data/problems'
 import { TARGET_MINUTES } from '@/lib/_consts/practice'
 import { cn } from '@/lib/_utils/cn'
-import { practiceLink } from '@/lib/domain'
 import { useTracker } from '@/lib/store'
-import { startProblem } from './start-problem'
+import { requestStart } from './start-problem'
 
 interface StartButtonProps {
   problem: Problem
@@ -13,7 +12,7 @@ interface StartButtonProps {
   className?: string
 }
 
-/** Start a problem from a list. Hidden while another one is being timed — one timer at a time. */
+/** Start a problem from a list (a round play button on phones). Hidden while another one is timed — one timer at a time. */
 export function StartButton({ problem, today, className }: StartButtonProps) {
   const busy = useTracker((s) => s.timer !== null)
   if (busy) return null
@@ -21,13 +20,13 @@ export function StartButton({ problem, today, className }: StartButtonProps) {
     <Button
       variant="outline"
       size="sm"
-      className={cn('shrink-0', className)}
+      className={cn('group/start shrink-0 max-sm:size-9 max-sm:rounded-full max-sm:px-0', className)}
       aria-label={`Start ${problem.title}`}
-      title={`Start the ${TARGET_MINUTES[problem.difficulty]}-minute timer and open it on ${practiceLink(problem).site}`}
-      onClick={() => startProblem(problem, today)}
+      title={`Start the ${TARGET_MINUTES[problem.difficulty]}-minute timer`}
+      onClick={() => requestStart(problem, today)}
     >
-      <PlayIcon className="fill-current" />
-      Start
+      <PlayIcon className="fill-current transition-transform duration-150 group-hover/start:translate-x-0.5" />
+      <span className="max-sm:sr-only">Start</span>
     </Button>
   )
 }

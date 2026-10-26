@@ -2,13 +2,13 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { problemById } from '@/data/problems'
-import { useTracker } from '@/lib/store'
+import { usePrefs, useTracker, useUI } from '@/lib/store'
 import { idOf } from '@/test/builders'
 import { resetStores } from '@/test/stores'
 import type { PlanItem } from '@/types'
 import { TodayView } from './TodayView'
 
-vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn() }))
+vi.mock('@/lib/_utils/browser', () => ({ openInNewTab: vi.fn(), downloadFile: vi.fn(), prefersMotion: () => false }))
 
 const today = '2026-10-26' // a Monday
 const [twoSum, mergeK, lru] = ['Two Sum', 'Merge K Sorted Lists', 'LRU Cache'].map(idOf)
@@ -50,6 +50,7 @@ describe('TodayView', () => {
   it('moves a problem started from the queue into the spotlight', async () => {
     const user = userEvent.setup()
     renderToday([open(twoSum), open(mergeK), open(lru)])
+    usePrefs.setState({ startOpens: 'nothing' })
 
     await user.click(within(queue()).getByRole('button', { name: 'Start LRU Cache' }))
     expect(nowCard()).toHaveAccessibleName('LRU Cache')
@@ -103,5 +104,41 @@ describe('TodayView', () => {
     act(() => vi.advanceTimersByTime(300))
     expect(pickedUp()).toBe(true)
     fireEvent.touchEnd(row)
+    // dnd-kit swallows clicks until a moment after the drop; let that pass, or the next test's first click is lost.
+    act(() => vi.runOnlyPendingTimers())
+  })
+
+  it('leaves the spotlight empty after you set its problem aside, until you choose the next', async () => {
+    const user = userEvent.setup()
+    renderToday([open(twoSum), open(mergeK)])
+
+    await user.click(within(nowCard()).getByRole('button', { name: 'Remove Two Sum from today' }))
+    expect(screen.queryByRole('region', { name: /Sorted Lists|Two Sum/ })).not.toBeInTheDocument()
+    expect(screen.getByText(/Nothing in focus/)).toBeInTheDocument()
+    expect(within(queue()).getByRole('button', { name: 'Start Merge K Sorted Lists' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Or show the next one here' }))
+    expect(nowCard()).toHaveAccessibleName('Merge K Sorted Lists')
+  })
+
+  it('keeps what you set aside in a backlog, ready to plan again', async () => {
+    const user = userEvent.setup()
+    renderToday([open(twoSum)], { backlog: [lru] })
+    const backlog = screen.getByRole('list', { name: 'Backlog' })
+    expect(backlog).toHaveTextContent('LRU Cache')
+
+    await user.click(within(backlog).getByRole('button', { name: 'Add LRU Cache to today' }))
+    expect(planToday()).toEqual([twoSum, lru])
+    expect(screen.queryByRole('list', { name: 'Backlog' })).not.toBeInTheDocument()
+  })
+
+  it('forgets a backlog problem, with Undo', async () => {
+    const user = userEvent.setup()
+    renderToday([], { backlog: [lru, mergeK] })
+    await user.click(screen.getByRole('button', { name: 'Remove LRU Cache from the backlog' }))
+    expect(useTracker.getState().backlog).toEqual([mergeK])
+
+    act(() => useUI.getState().toast!.action!.run())
+    expect(useTracker.getState().backlog).toEqual([lru, mergeK])
   })
 })
