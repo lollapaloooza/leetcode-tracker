@@ -5,7 +5,7 @@ import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
 import { CONFIDENCES, RESULTS, STATUSES } from '@/lib/_consts/enums'
 import { GOAL_LIMITS } from '@/lib/_consts/practice'
 import { localDate } from '@/lib/_utils/date'
-import { initialReview, isSolved } from '@/lib/domain'
+import { initialReview, isSolved, solvedCount } from '@/lib/domain'
 import type {
   Attempt,
   Complexity,
@@ -127,4 +127,31 @@ export function exportable(s: TrackerData): Omit<TrackerData, 'timer'> {
 /** Does a file look like one of our backups at all? (Its contents are still checked by `normalize`.) */
 export function isTrackerData(value: unknown): boolean {
   return isRecord(value) && isRecord(value.progress) && isRecord(value.plans)
+}
+
+export type BackupParse = { ok: true; data: TrackerData } | { ok: false; reason: 'not-json' | 'not-a-backup' }
+
+/** A backup file's text as valid data, or why it can't be imported. */
+export function parseBackup(text: string): BackupParse {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    return { ok: false, reason: 'not-json' }
+  }
+  return isTrackerData(raw) ? { ok: true, data: normalize(raw) } : { ok: false, reason: 'not-a-backup' }
+}
+
+export interface BackupSummary {
+  solved: number
+  attempts: number
+  notes: number
+  /** Day of the latest attempt, or null when none was logged */
+  lastPractice: string | null
+}
+
+/** What's in a backup, so you can tell it's the right file before replacing anything. */
+export function summarizeBackup(data: TrackerData): BackupSummary {
+  const lastPractice = data.attempts.reduce<string | null>((last, a) => (last === null || a.date > last ? a.date : last), null)
+  return { solved: solvedCount(data.progress), attempts: data.attempts.length, notes: Object.keys(data.notes).length, lastPractice }
 }

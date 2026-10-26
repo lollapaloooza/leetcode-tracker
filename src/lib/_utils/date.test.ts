@@ -3,6 +3,7 @@ import {
   addDays,
   diffDays,
   formatDuration,
+  formatLongDay,
   formatRelative,
   formatShortDay,
   isWeekend,
@@ -117,5 +118,11 @@ describe('formatDuration', () => {
 
   it('never shows negative time', () => {
     expect(formatDuration(-5_000)).toBe('0:00')
+  })
+})
+
+describe('formatLongDay', () => {
+  it('spells out the weekday and month, for headings', () => {
+    expect(formatLongDay('2026-10-26')).toBe('Monday, October 26')
   })
 })

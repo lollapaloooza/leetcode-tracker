@@ -13,9 +13,16 @@ export default defineConfig({
     },
   },
   test: {
-    // Unit tests sit next to the module they cover.
-    include: ['src/**/*.test.ts'],
     // A zone with daylight saving, so date math is tested across clock changes wherever it runs.
     env: { TZ: 'America/New_York' },
+    // Tests sit next to the module they cover. `.test.ts` is plain logic and runs in Node;
+    // `.test.tsx` renders React with Testing Library in jsdom.
+    projects: [
+      { extends: true, test: { name: 'unit', include: ['src/**/*.test.ts'], environment: 'node' } },
+      {
+        extends: true,
+        test: { name: 'dom', include: ['src/**/*.test.tsx'], environment: 'jsdom', setupFiles: ['src/test/setup-dom.ts'] },
+      },
+    ],
   },
 })

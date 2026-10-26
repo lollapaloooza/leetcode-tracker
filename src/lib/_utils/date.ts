@@ -40,6 +40,11 @@ export function weekStart(date: string): string {
   return addDays(date, -((parseDate(date).getDay() + 6) % 7))
 }
 
+/** "Monday, October 26" — for headings. */
+export function formatLongDay(date: string): string {
+  return parseDate(date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
 export function formatDay(date: string): string {
   return parseDate(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
 }

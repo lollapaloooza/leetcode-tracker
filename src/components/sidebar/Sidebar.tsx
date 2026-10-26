@@ -1,20 +1,25 @@
-import { BackupSection } from './BackupSection'
+import { Settings2Icon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useUI } from '@/lib/store'
 import { FocusSection } from './FocusSection'
-import { InterviewSection } from './InterviewSection'
 import { ProgressSection } from './ProgressSection'
-import { RoutineSection } from './RoutineSection'
 import { ThisWeekSection } from './ThisWeekSection'
 
-/** Secondary info, GitHub "About"-style: plain sections on the page background, so the task list stays the focus. */
+/**
+ * What changes day to day: beside the main column on wide screens, atop the Progress tab below `lg`
+ * (two columns on tablets). Settings you rarely touch live in the Settings sheet.
+ */
 export function Sidebar({ today }: { today: string }) {
+  const setSettingsOpen = useUI((s) => s.setSettingsOpen)
   return (
-    <div className="flex flex-col max-lg:border-t max-lg:pt-6 sm:max-lg:grid sm:max-lg:grid-cols-2 sm:max-lg:gap-x-10">
+    <div className="flex flex-col gap-4 sm:max-lg:grid sm:max-lg:grid-cols-2">
       <ProgressSection today={today} />
-      <FocusSection today={today} />
-      <InterviewSection today={today} />
       <ThisWeekSection today={today} />
-      <RoutineSection />
-      <BackupSection />
+      <FocusSection today={today} />
+      <Button variant="ghost" size="sm" className="justify-start self-start text-muted-foreground sm:max-lg:col-span-2" onClick={() => setSettingsOpen(true)}>
+        <Settings2Icon />
+        Routine, interview date and backup
+      </Button>
     </div>
   )
 }

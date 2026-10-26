@@ -4,7 +4,9 @@ import { GripVerticalIcon } from 'lucide-react'
 import { DifficultyDot, DifficultyTag } from '@/components/DifficultyTag'
 import { problemById } from '@/data/problems'
 import { cn } from '@/lib/_utils/cn'
-import { BoardKeys, problemIdOf, type usePlanBoard } from './plan-board'
+import { BoardKeys } from './board-keys'
+import { problemIdOf } from './board-lists'
+import type { usePlanBoard } from './usePlanBoard'
 
 export function PlanBoard({ board, children }: { board: ReturnType<typeof usePlanBoard>; children: ReactNode }) {
   const active = board.activeId ? problemById.get(problemIdOf(board.activeId)) : undefined
@@ -47,5 +49,5 @@ export function DragHandle({ label, className, ...props }: ComponentProps<'butto
 
 /** Keeps columns lined up on rows that can't be dragged. */
 export function HandleSpacer() {
-  return <span aria-hidden className="w-5" />
+  return <span aria-hidden className="w-5 max-sm:hidden" />
 }

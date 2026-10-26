@@ -18,6 +18,11 @@
   },
   "overrides": [
     {
+      "files": ["src/**/use-*"],
+      "plugins": ["unicorn"],
+      "rules": { "unicorn/filename-case": ["error", { "case": "camelCase" }] }
+    },
+    {
       "files": ["src/lib/_consts/**"],
       "rules": {
         "no-restricted-imports": [

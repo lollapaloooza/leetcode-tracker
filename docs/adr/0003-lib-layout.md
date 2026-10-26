@@ -36,7 +36,7 @@ src/test/builders.ts                    shared builders for unit tests
 2. **Plain folders are modules** with a public API in `index.ts`. Import the folder (`@/lib/store`), never a file inside it. Files within a module import each other relatively.
 3. **Dependencies point one way:**
    `types → _consts → _utils → domain → store → _hooks / theme → components`
-4. **Shared means no feature knowledge.** A hook or helper that only one feature uses stays with that feature, for example `use-days-away.ts` and `plan-board.ts` in `components/today/`. It moves to `lib` once a second feature needs it, and only if it knows nothing about the first.
+4. **Shared means no feature knowledge.** A hook or helper that only one feature uses stays with that feature, for example `useDaysAway.ts` and `usePlanBoard.ts` in `components/today/` (hook files are camelCase since 2026-10-26). It moves to `lib` once a second feature needs it, and only if it knows nothing about the first.
 
 **Enforced by `npm run lint`** (oxlint `no-restricted-imports`, per-folder overrides in `.oxlintrc.json`):
 
@@ -91,7 +91,7 @@ Each rule was checked by adding a file that breaks it and confirming that lint f
 **Revisit when**
 
 - `_utils` or `_consts` grows past about 10 files: group them by topic, or promote a cohesive group to a module.
-- A second feature needs `useSolvedStats`, `useDaysAway` or the plan-board hooks: move them to `_hooks` or `store`.
+- A second feature needs `useSolvedStats`, `useDaysAway` or the `usePlanBoard` hooks: move them to `_hooks` or `store`.
 
 ## What changed
 

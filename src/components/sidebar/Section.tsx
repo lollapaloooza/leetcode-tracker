@@ -1,15 +1,16 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
-/** One sidebar block: a small heading with an optional action, then its content. */
-export function Section({ title, action, children }: { title?: string; action?: ReactNode; children: ReactNode }) {
+/** One sidebar card: a small heading with an optional action, then its content. */
+export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+  const headingId = useId()
   return (
-    <section className="border-b py-5 first:pt-0 last:border-b-0 sm:max-lg:[&:nth-child(-n+2)]:pt-0">
-      {title && (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          {action}
-        </div>
-      )}
+    <section aria-labelledby={headingId} className="rounded-xl bg-card p-4 ring-1 ring-border">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 id={headingId} className="text-sm font-semibold">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   )

@@ -22,8 +22,8 @@ interface UIState {
   closeDetail: () => void
   pythonOpen: boolean
   setPythonOpen: (open: boolean) => void
-  interviewPickerOpen: boolean
-  setInterviewPickerOpen: (open: boolean) => void
+  settingsOpen: boolean
+  setSettingsOpen: (open: boolean) => void
   shortOnTimeOpen: boolean
   setShortOnTimeOpen: (open: boolean) => void
   calendarOpen: boolean
@@ -44,8 +44,8 @@ export const useUI = create<UIState>()((set) => ({
   closeDetail: () => set({ detailFor: null }),
   pythonOpen: false,
   setPythonOpen: (pythonOpen) => set({ pythonOpen }),
-  interviewPickerOpen: false,
-  setInterviewPickerOpen: (interviewPickerOpen) => set({ interviewPickerOpen }),
+  settingsOpen: false,
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   shortOnTimeOpen: false,
   setShortOnTimeOpen: (shortOnTimeOpen) => set({ shortOnTimeOpen }),
   calendarOpen: false,

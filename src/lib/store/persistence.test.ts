@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
-import { attempt, idOf, progressOf } from '@/test/builders'
-import { exportable, isTrackerData, normalize } from './persistence'
+import { attempt, idOf, progressOf, tracker } from '@/test/builders'
+import { exportable, isTrackerData, normalize, parseBackup, summarizeBackup } from './persistence'
 
 describe('normalize', () => {
   it('turns anything that is not an object into the defaults', () => {
@@ -114,5 +114,37 @@ describe('isTrackerData', () => {
     for (const value of [null, [], 'x', { progress: {} }, { progress: [], plans: {} }, { progress: {}, plans: null }]) {
       expect(isTrackerData(value)).toBe(false)
     }
+  })
+})
+
+describe('parseBackup', () => {
+  it('turns an exported file back into the same data', () => {
+    const data = tracker({ progress: progressOf('solved', 'Two Sum'), attempts: [attempt('Two Sum', '2026-10-20')] })
+    expect(parseBackup(JSON.stringify(exportable(data)))).toEqual({ ok: true, data })
+  })
+
+  it('drops bad entries instead of refusing the file', () => {
+    const result = parseBackup(JSON.stringify({ progress: { 1: { status: 'nope' } }, plans: {} }))
+    expect(result).toEqual({ ok: true, data: TRACKER_DEFAULTS })
+  })
+
+  it("says why a file can't be imported", () => {
+    expect(parseBackup('{ not json')).toEqual({ ok: false, reason: 'not-json' })
+    expect(parseBackup('[1, 2, 3]')).toEqual({ ok: false, reason: 'not-a-backup' })
+  })
+})
+
+describe('summarizeBackup', () => {
+  it('counts what a backup holds and finds the last practice day', () => {
+    const data = tracker({
+      progress: { ...progressOf('solved', 'Two Sum'), ...progressOf('helped', 'Valid Anagram'), ...progressOf('attempted', '3Sum') },
+      attempts: [attempt('Two Sum', '2026-10-20'), attempt('3Sum', '2026-10-24'), attempt('Valid Anagram', '2026-10-22')],
+      notes: { [idOf('Two Sum')]: 'Hash map of complements' },
+    })
+    expect(summarizeBackup(data)).toEqual({ solved: 2, attempts: 3, notes: 1, lastPractice: '2026-10-24' })
+  })
+
+  it('has no last practice day when nothing was logged', () => {
+    expect(summarizeBackup(TRACKER_DEFAULTS).lastPractice).toBeNull()
   })
 })

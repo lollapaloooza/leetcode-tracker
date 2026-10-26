@@ -22,8 +22,8 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm run preview` | Serve the built `dist/` locally |
-| `npm run check` | Type-check, lint and unit tests; run before every commit |
-| `npm test` / `npm run test:watch` | Unit tests (Vitest), once or on every change |
+| `npm run check` | Type-check, lint and all tests; run before every commit |
+| `npm test` / `npm run test:watch` | Logic tests (Node) and component tests (jsdom), once or on every change |
 | `npm run lint` | oxlint, including the folder boundaries in `src/lib` |
 | `npm run generate:problems` | Rebuild `src/data/problems.ts` from NeetCode's data, then review the diff |
 
@@ -31,10 +31,15 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
 
 - **Today:** pick problems, or press **Suggest** for due reviews first and then the next new ones. Time each one against an interview target (Easy 15, Medium 25, Hard 40 min), then log the attempt: the result, your confidence and the key idea. Pick **Tomorrow**'s problems the night before, so after work you only press Start.
 - **Priority:** the list order is the priority.
-  - Drag a row by its grip to reorder it, or across into Tomorrow and back. From the keyboard, focus the grip and press ↑/↓.
-  - Each row's ⋯ menu has **Do first**, **Move to tomorrow**, **Move to Saturday** (for a Hard that deserves the weekend session) and **Remove**.
+  - Drag a row by its grip to reorder it, or across into Tomorrow and back. From the keyboard, focus the grip and press ↑/↓. On a phone, hold a row for a moment, then drag.
+  - Each row's ⋯ menu has **Start**, **Do first**, **Move to tomorrow**, **Move to Saturday** (for a Hard that deserves the weekend session), the LeetCode / NeetCode / video links, and **Remove**.
   - Problems put off past tomorrow show under **Later**.
-- **Up next and working on it:** the top unfinished problem is **Up next**, with Start as the main button. Once started, it leads the list with a live timer and a bar against the target time. The header and the browser tab title show it while you're on LeetCode.
+- **Now:** the day opens with its date, how many are done, and about how many minutes the goal still needs. Below it, one card holds the problem to work on:
+  - **Up next**, with **Start**, which starts the timer and opens the problem on LeetCode (or on NeetCode when LeetCode needs Premium);
+  - once started, a big clock against the time box, **Done — log attempt**, and Pause;
+  - on other tabs the timer stays in sight: a pill in the header, or on phones a bar above the tab bar with Pause and Log. The browser tab's title shows it too while you're on LeetCode.
+- **Then:** the rest of today's problems, one line each, in order. Due reviews are a link above the list that adds as many as the goal has room for.
+- **Done today:** finished problems fold into their own group: how each went, the minutes against its time box, and when it comes back for review.
 - **Daily goal line:** a **Bonus** line marks where today's goal ends (1 problem on weekdays, 3 on weekends by default). The day is done when the goal is, and anything below the line is extra.
 - **Short on time?** One task of about 20 minutes:
   - a quick review, with the timer starting right away;
@@ -42,22 +47,24 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
 - **Welcome back:** after 3 or more days away, you restart small instead of facing a wall: one easy re-solve today, overdue reviews spread out at 1–2 a day, and the interview pace restarted from today.
 - **Reviews:** a clean solve comes back after 3, then 7, 21 and 60 days, and is then mastered. Shaky confidence repeats the interval; needing help or failing brings the problem back tomorrow.
 - **Patterns:** every key idea with its time and space complexity, grouped by topic, with **Copy as Markdown** for Obsidian.
-- **History:**
+- **History** (called **Progress** on phones and tablets, where it also holds the sidebar's cards):
   - a GitHub-style activity grid, a summary of the last 7 days, and a day-by-day log;
   - click any problem title to open its details: every attempt with its time against the target, the key idea, the complexity and the next review.
 - **Focus:** the sidebar ranks your weakest topics from the last 60 days and adds a problem from one in a click. Needing help or failing counts most, then running over time, then shaky solves.
-- **Progress:** an overall bar in the sidebar with a marker for the pace your interview date needs. Today's bar sits above the task list.
-- **This week and Routine:**
+- **Progress:** an overall bar in the sidebar with a marker for the pace your interview date needs, and how many a day it takes to finish. Today's bar sits above the task list.
+- **This week:**
   - a weekly goal of N practice days, with Mon–Sun dots and a weekly streak that one skipped evening can't break;
   - separate weekday and weekend amounts, and **Core 150 first** for Suggest;
   - **Add to calendar** downloads an .ics file with recurring practice blocks and a 5-minute reminder.
+- **Layout:** on wide screens the tabs sit in the header and the sidebar beside the list. Below laptop width the sidebar's cards move to the top of the Progress tab, and phones get a tab bar at the bottom.
+- **Settings** (the gear in the header): the routine above, the interview date, the theme (System, Light or Dark) and backups.
 - **⌘K:** find any problem and act on it: add it to today, start the timer, log an attempt, open it on LeetCode or NeetCode or watch the video, or set its status.
 - **Python:** a slide-out cheatsheet of Python for LeetCode, with the JavaScript equivalent next to each item.
 
 ## Your data
 
 - **Where it's stored:** progress is saved in this browser's localStorage under the key `leetcode-tracker`. Clearing site data, or using another browser or device, starts from scratch. Cloud sync is designed but not built yet ([ADR-002](docs/adr/0002-hosting-auth-sync.md)).
-- **Backups:** **Export backup** at the bottom of the sidebar downloads everything as JSON. **Import** shows what a file contains before it replaces anything.
+- **Backups:** **Export backup** in Settings downloads everything as JSON. **Import** shows what a file contains before it replaces anything.
 - **Old and damaged saves:** older saves are upgraded on load, and a damaged one loses only its bad entries, not the whole save.
 - **If the app ever crashes:** the error screen offers to download your raw saved data, reload, or reset.
 
@@ -65,11 +72,11 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
 
 ```
 src/
-  components/   React UI: views, dialogs, today/ and sidebar/ features, ui/ (shadcn)
+  components/   React UI by feature: shell/, today/, sidebar/, settings/, command-palette/, ui/ (shadcn)
   lib/          everything below the UI: _consts, _utils, _hooks, domain, store, theme
   types/        the saved data model (types only)
   data/         the 250 problems (generated) and the Python cheatsheet
-  test/         shared builders for unit tests
+  test/         test builders, store reset, and the jsdom setup
 scripts/        generate-problems.ts
 docs/           architecture overview, decisions (ADRs), tech-debt audit
 ```
@@ -82,6 +89,7 @@ docs/           architecture overview, decisions (ADRs), tech-debt audit
   - [ADR-001](docs/adr/0001-code-structure.md): layered structure
   - [ADR-002](docs/adr/0002-hosting-auth-sync.md): hosting, sign-in and sync (proposed)
   - [ADR-003](docs/adr/0003-lib-layout.md): `lib` layout and lint-enforced boundaries
+  - [ADR-004](docs/adr/0004-layout-redesign.md): the "focus first" layout, built on the current code in slices (proposed)
 - [docs/tech-debt.md](docs/tech-debt.md): the debt audit and what's still open
 
 ## Stack

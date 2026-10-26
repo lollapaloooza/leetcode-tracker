@@ -7,13 +7,13 @@ How to work on this codebase: the workflow, where code goes, and step-by-step gu
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm run check        # type-check + lint + unit tests — run before every commit
+npm run check        # type-check + lint + all tests — run before every commit
 ```
 
 For a UI change, also try it in the browser:
 
 - in **light and dark** (the toggle is in the header);
-- at **phone width**, since the layout has mobile rules;
+- at **phone width** and **tablet width**, since the layout changes at `sm` and `lg` (see [Layout](docs/architecture.md#layout)): a tab bar, a NowBar and hold-to-drag on phones, the sidebar's cards in the Progress tab below `lg`;
 - **from the keyboard**: rows, menus and drag handles all work without a mouse.
 
 Commit messages use a `type: summary` prefix (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`).
@@ -30,9 +30,10 @@ Find the first row that fits.
 | A practice rule: what to suggest, when a review is due, a stat | `src/lib/domain/<area>.ts` | `@/lib/domain` |
 | Something that changes saved state | an action in `src/lib/store/tracker-store.ts` | `@/lib/store` |
 | UI state that isn't saved (open dialogs, the current tab) | `src/lib/store/ui-store.ts` | `@/lib/store` |
-| A React hook that knows nothing about the tracker | `src/lib/_hooks/use-<name>.ts` | `@/lib/_hooks/use-now` |
+| A React hook that knows nothing about the tracker | `src/lib/_hooks/useName.ts` | `@/lib/_hooks/useNow` |
 | A hook, constant or helper that only one feature uses | next to that feature, e.g. `src/components/today/` | relative import |
-| A view, dialog or sidebar section | `src/components/` (`today/` and `sidebar/` for those features) | `@/components/…` |
+| A view, dialog or sidebar section | `src/components/`, in its feature folder (`shell/`, `today/`, `sidebar/`, `settings/`, `command-palette/`) | `@/components/…` |
+| The logic behind one component (state, derived values, handlers) | a `useName.ts` hook next to the component | relative import |
 
 Two rules come with this table. `npm run lint` enforces both ([ADR-003](docs/adr/0003-lib-layout.md)):
 
@@ -47,7 +48,8 @@ If lint rejects an import, the code is usually in the wrong layer: move it, don'
   - **Imports:** packages first, then `@/` paths in alphabetical order, then relative paths.
 - **Naming:**
   - components are `PascalCase.tsx`;
-  - other modules are `kebab-case.ts`, and hooks are `use-<name>.ts`;
+  - hooks are camelCase, file and function alike (`useNowCard.ts` exports `useNowCard`); lint rejects a `use-name.ts` file;
+  - other modules are `kebab-case.ts`;
   - every export is named, except `App`.
 - **Comments:**
   - say *why*, or what isn't obvious from the code;
@@ -59,8 +61,15 @@ If lint rejects an import, the code is usually in the wrong layer: move it, don'
   - **in event handlers:** read the latest state with `useTracker.getState()`.
 - **Interface text:** use sentence case and plain words, and name what happens ("Move to tomorrow", not "Reschedule item").
 - **`src/components/ui/`** is shadcn's generated code. Leave its style alone (double quotes, `cn` imported from `'cn'`) so `shadcn add` and diffs stay clean.
+- **Components:**
+  - keep them small and presentational: about one screen of code, one job;
+  - move state, derived values and handlers into a `useName.ts` hook beside the component;
+  - rules that don't need React (what's up next, how much time is left) go in `lib/domain` as pure functions, so they're tested in Node;
+  - split a file that has grown big when you touch it.
 - **Tests:**
-  - they sit next to the module they cover (`planning.ts` → `planning.test.ts`);
+  - they sit next to the module they cover (`planning.ts` → `planning.test.ts`, `GoalStepper.tsx` → `GoalStepper.test.tsx`);
+  - `*.test.ts` runs in Node; `*.test.tsx` runs in jsdom with Testing Library. Each component test starts with clean stores, storage and DOM (`src/test/setup-dom.ts`);
+  - test components the way they're used: find elements by role and name, act with `userEvent`, assert on what's shown and on the stores. Seed data with `resetStores({ … })` from `@/test/stores`;
   - build data with `@/test/builders` (`idOf`, `attempt`, `progressOf`, `tracker`);
   - pass dates explicitly;
   - tests run in `America/New_York`, so date code is exercised across daylight-saving changes.
@@ -115,7 +124,7 @@ Once cloud sync exists, the field also needs a merge rule ([ADR-002 §3.5](docs/
 
 1. **Build the component** in `src/components/MyDialog.tsx`, with a named export.
 2. **Add its open state** to `useUI` (`src/lib/store/ui-store.ts`): `myDialogOpen` and `setMyDialogOpen`.
-3. **Wire it up** in `src/App.tsx`:
+3. **Wire it up** in `src/components/shell/Overlays.tsx`:
 
    ```tsx
    const MyDialog = lazyComponent(() => import('@/components/MyDialog').then((m) => m.MyDialog))
@@ -136,7 +145,7 @@ The dialog now lives in its own chunk, and it's preloaded once the page is idle.
 npx shadcn add <component>
 ```
 
-It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 550 kB (175 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
+It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 552 kB (175 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
 
 ### Refresh the problem list
 

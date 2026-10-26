@@ -1,266 +1,70 @@
-import { Suspense, useEffect, useState, type ReactNode } from 'react'
-import { CalendarCheckIcon, HistoryIcon, LayoutListIcon, MoonIcon, NotebookPenIcon, SearchIcon, SunIcon } from 'lucide-react'
-import { LogAttemptDialog } from '@/components/LogAttemptDialog'
+import { Suspense, useEffect } from 'react'
 import { ProblemsView } from '@/components/ProblemsView'
-import { PythonIcon } from '@/components/PythonIcon'
+import { DocumentTitle } from '@/components/shell/DocumentTitle'
+import { MobileNav } from '@/components/shell/MobileNav'
+import { NowBar } from '@/components/shell/NowBar'
+import { Overlays } from '@/components/shell/Overlays'
+import { ProgressTab } from '@/components/shell/ProgressTab'
+import { TopBar } from '@/components/shell/TopBar'
 import { Sidebar } from '@/components/sidebar/Sidebar'
-import { LiveDot } from '@/components/TimerControls'
 import { TodayView } from '@/components/today/TodayView'
-import { Button } from '@/components/ui/button'
-import { Kbd } from '@/components/ui/kbd'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { problemById } from '@/data/problems'
-import { useNow } from '@/lib/_hooks/use-now'
-import { useToday } from '@/lib/_hooks/use-today'
-import { formatDuration } from '@/lib/_utils/date'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
+import { WIDE_SCREEN } from '@/lib/_consts/layout'
+import { useMediaQuery } from '@/lib/_hooks/useMediaQuery'
+import { useToday } from '@/lib/_hooks/useToday'
 import { lazyComponent, preloadLazyComponents } from '@/lib/_utils/lazy'
-import { timerElapsed } from '@/lib/domain'
-import { useTracker, useUI, type Tab } from '@/lib/store'
-import { useTheme } from '@/lib/theme'
+import { useUI, type Tab } from '@/lib/store'
 
-// Not needed for the first screen: each loads in its own chunk, in the background after startup.
-const HistoryView = lazyComponent(() => import('@/components/HistoryView').then((m) => m.HistoryView))
+// Not needed for the first screen: loads in its own chunk, in the background after startup.
 const PatternsView = lazyComponent(() => import('@/components/PatternsView').then((m) => m.PatternsView))
-const CommandPalette = lazyComponent(() => import('@/components/CommandPalette').then((m) => m.CommandPalette))
-const ProblemSheet = lazyComponent(() => import('@/components/ProblemSheet').then((m) => m.ProblemSheet))
-const PythonSheet = lazyComponent(() => import('@/components/PythonSheet').then((m) => m.PythonSheet))
-const ShortOnTimeDialog = lazyComponent(() => import('@/components/ShortOnTimeDialog').then((m) => m.ShortOnTimeDialog))
-const CalendarDialog = lazyComponent(() => import('@/components/CalendarDialog').then((m) => m.CalendarDialog))
-
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 export default function App() {
   const today = useToday()
   const tab = useUI((s) => s.tab)
   const setTab = useUI((s) => s.setTab)
-  const plannedCount = useTracker((s) => s.plans[today]?.length ?? 0)
-  const notesCount = useTracker((s) => Object.keys(s.notes).length)
+  const wide = useMediaQuery(WIDE_SCREEN)
 
   useEffect(preloadLazyComponents, [])
 
   return (
-    <div className="min-h-svh">
+    // The tabs span the page: their list is in the header, their panels in the main column.
+    <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="min-h-svh flex-col gap-0">
       <DocumentTitle />
-      <TopBar />
+      <TopBar today={today} />
 
-      {/* Tasks get the main column; progress lives in a quiet sidebar (below the tasks on smaller screens). */}
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 pt-5 pb-14 max-sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-10">
+      {/* Tasks get the main column. Progress lives in a quiet sidebar on wide screens, and in its own tab below lg. */}
+      <div className="mx-auto grid w-full max-w-6xl flex-1 content-start gap-10 px-5 pt-5 pb-14 max-sm:px-4 max-sm:pb-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <main className="min-w-0">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="gap-4">
-            <TabsList variant="line" className="w-full justify-start gap-5 border-b px-0 max-sm:gap-4">
-              <NavTab value="today" icon={CalendarCheckIcon} label="Today" count={plannedCount} />
-              <NavTab value="all" icon={LayoutListIcon} label="All problems" shortLabel="Problems" />
-              <NavTab value="patterns" icon={NotebookPenIcon} label="Patterns" count={notesCount} />
-              <NavTab value="history" icon={HistoryIcon} label="History" />
-            </TabsList>
-            <TabsContent value="today">
-              <TodayView today={today} />
-            </TabsContent>
-            <TabsContent value="all">
-              <ProblemsView today={today} />
-            </TabsContent>
-            <TabsContent value="patterns">
-              <Suspense fallback={null}>
-                <PatternsView />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="history">
-              <Suspense fallback={null}>
-                <HistoryView today={today} />
-              </Suspense>
-            </TabsContent>
-          </Tabs>
+          <TabsContent value="today">
+            <TodayView today={today} />
+          </TabsContent>
+          <TabsContent value="all">
+            <ProblemsView today={today} />
+          </TabsContent>
+          <TabsContent value="patterns">
+            <Suspense fallback={null}>
+              <PatternsView />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="history">
+            <ProgressTab today={today} withCards={!wide} />
+          </TabsContent>
         </main>
 
-        <aside aria-label="Progress" className="lg:sticky lg:top-20 lg:self-start lg:pt-1">
-          <Sidebar today={today} />
-        </aside>
+        {wide && (
+          <aside aria-label="Progress" className="sticky top-20 self-start pt-1">
+            <Sidebar today={today} />
+          </aside>
+        )}
+      </div>
+
+      {/* Phones: the tab bar, with the problem on the clock above it. Sticky, so it never covers the end of the page. */}
+      <div className="sticky bottom-0 z-40 sm:hidden">
+        <NowBar today={today} />
+        <MobileNav />
       </div>
 
       <Overlays today={today} />
-    </div>
+    </Tabs>
   )
-}
-
-/** Dialogs and drawers. Each lazy one mounts the first time it opens, so its code loads only when needed. */
-function Overlays({ today }: { today: string }) {
-  const paletteOpen = useUI((s) => s.paletteOpen)
-  const detailOpen = useUI((s) => s.detailFor !== null)
-  const pythonOpen = useUI((s) => s.pythonOpen)
-  const shortOnTimeOpen = useUI((s) => s.shortOnTimeOpen)
-  const calendarOpen = useUI((s) => s.calendarOpen)
-
-  // ⌘K lives here rather than in the palette, so it works before the palette has ever loaded.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        const ui = useUI.getState()
-        ui.setPaletteOpen(!ui.paletteOpen)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
-
-  return (
-    <>
-      <LogAttemptDialog today={today} />
-      <MountWhenOpened open={paletteOpen}>
-        <CommandPalette today={today} />
-      </MountWhenOpened>
-      <MountWhenOpened open={detailOpen}>
-        <ProblemSheet today={today} />
-      </MountWhenOpened>
-      <MountWhenOpened open={pythonOpen}>
-        <PythonSheet />
-      </MountWhenOpened>
-      <MountWhenOpened open={shortOnTimeOpen}>
-        <ShortOnTimeDialog today={today} />
-      </MountWhenOpened>
-      <MountWhenOpened open={calendarOpen}>
-        <CalendarDialog />
-      </MountWhenOpened>
-    </>
-  )
-}
-
-/** Renders its children from the first time `open` is true, and keeps them, so closing still animates. */
-function MountWhenOpened({ open, children }: { open: boolean; children: ReactNode }) {
-  const [opened, setOpened] = useState(open)
-  if (open && !opened) setOpened(true)
-  return opened ? <Suspense fallback={null}>{children}</Suspense> : null
-}
-
-/** GitHub UnderlineNav: muted icon, label, counter — coral underline on the active tab. */
-function NavTab({
-  value,
-  icon: Icon,
-  label,
-  shortLabel,
-  count,
-}: {
-  value: Tab
-  icon: typeof SearchIcon
-  label: string
-  /** Used on phones, where all four tabs have to fit on one line */
-  shortLabel?: string
-  count?: number
-}) {
-  return (
-    <TabsTrigger value={value} className="group/nav flex-none px-0 after:bg-nav-active">
-      <Icon className="text-muted-foreground group-data-[state=active]/nav:text-foreground max-sm:hidden" />
-      <span className={shortLabel ? 'max-sm:hidden' : undefined}>{label}</span>
-      {shortLabel && <span className="sm:hidden">{shortLabel}</span>}
-      {count !== undefined && count > 0 && (
-        <span className="min-w-[18px] rounded-full bg-muted px-1.5 text-[11px] leading-[18px] text-muted-foreground tabular-nums">
-          {count}
-        </span>
-      )}
-    </TabsTrigger>
-  )
-}
-
-function TopBar() {
-  const setPaletteOpen = useUI((s) => s.setPaletteOpen)
-  const setPythonOpen = useUI((s) => s.setPythonOpen)
-  return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-5 max-sm:px-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Logo />
-          <span className="truncate font-semibold tracking-tight">LeetCode Tracker</span>
-          <span className="text-[13px] text-muted-foreground max-sm:hidden">NeetCode 250</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <TimerPill />
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-muted-foreground"
-            aria-label={`Search (${isMac ? '⌘' : 'Ctrl'} K)`}
-            onClick={() => setPaletteOpen(true)}
-          >
-            <SearchIcon />
-            <span className="max-sm:hidden">Search</span>
-            <Kbd className="max-sm:hidden">{isMac ? '⌘' : 'Ctrl'} K</Kbd>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setPythonOpen(true)} aria-label="Open Python cheatsheet">
-            <PythonIcon />
-            <span className="max-sm:hidden">Python</span>
-          </Button>
-          <ThemeToggle />
-        </div>
-      </div>
-    </header>
-  )
-}
-
-function Logo() {
-  return (
-    <svg viewBox="0 0 32 32" className="size-6 shrink-0" aria-hidden>
-      <rect width="32" height="32" rx="8" className="fill-primary" />
-      <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
-  const next = theme === 'dark' ? 'light' : 'dark'
-  return (
-    <Button
-      variant="outline"
-      size="icon-sm"
-      className="relative text-muted-foreground"
-      aria-label={`Switch to ${next} theme`}
-      title={`Switch to ${next} theme`}
-      onClick={toggleTheme}
-    >
-      <SunIcon className="scale-100 rotate-0 transition-transform duration-300 dark:scale-0 dark:-rotate-90" />
-      <MoonIcon className="absolute scale-0 rotate-90 transition-transform duration-300 dark:scale-100 dark:rotate-0" />
-    </Button>
-  )
-}
-
-/** Keeps the problem you're working on visible while you browse other tabs. */
-function TimerPill() {
-  const timer = useTracker((s) => s.timer)
-  const tab = useUI((s) => s.tab)
-  const setTab = useUI((s) => s.setTab)
-  const running = Boolean(timer?.startedAt)
-  const now = useNow(running)
-  if (!timer || tab === 'today') return null
-  const problem = problemById.get(timer.id)
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="bg-primary/10 text-link hover:bg-primary/15 hover:text-link"
-      onClick={() => setTab('today')}
-      aria-label={`${running ? 'Working on' : 'Paused'} ${problem?.title ?? 'a problem'}, ${formatDuration(timerElapsed(timer, now))}. Go to Today`}
-    >
-      <LiveDot running={running} />
-      {problem && <span className="max-w-40 truncate max-md:hidden">{problem.title}</span>}
-      <span className="tabular-nums">{formatDuration(timerElapsed(timer, now))}</span>
-    </Button>
-  )
-}
-
-const BASE_TITLE = 'LeetCode Tracker'
-
-/** The browser tab shows what you're working on — handy while you're over on LeetCode. */
-function DocumentTitle() {
-  const timer = useTracker((s) => s.timer)
-  const running = Boolean(timer?.startedAt)
-  const now = useNow(running)
-  const problem = timer ? problemById.get(timer.id) : undefined
-  const title =
-    timer && problem
-      ? `${running ? `▶ ${formatDuration(timerElapsed(timer, now))}` : '⏸ Paused'} · ${problem.title} — ${BASE_TITLE}`
-      : BASE_TITLE
-  useEffect(() => {
-    document.title = title
-  }, [title])
-  return null
 }
