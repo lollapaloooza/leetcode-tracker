@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import type { Problem } from '@/data/problems'
 import { formatDuration, useNow } from '@/lib/date'
 import { TARGET_MINUTES } from '@/lib/srs'
-import { timerElapsed, useTracker } from '@/store'
+import { timerElapsed } from '@/lib/timer'
+import { useTracker } from '@/store'
 import { useUI } from '@/ui-store'
 
 /**

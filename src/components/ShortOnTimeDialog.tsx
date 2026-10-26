@@ -4,21 +4,12 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { PROBLEMS, videoUrl, type Problem } from '@/data/problems'
-import { nextToStudy, quickReview, useTracker } from '@/store'
+import { problemById, videoUrl, type Problem } from '@/data/problems'
+import { openInNewTab } from '@/lib/browser'
+import { nextToStudy, quickReview } from '@/lib/planning'
+import { useTracker } from '@/store'
 import { useUI } from '@/ui-store'
 import { DifficultyTag } from './DifficultyTag'
-
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
-
-/** Open in a new tab from a click handler (a real link click, so it's never a popup window). */
-function openInNewTab(url: string) {
-  const a = document.createElement('a')
-  a.href = url
-  a.target = '_blank'
-  a.rel = 'noopener noreferrer'
-  a.click()
-}
 
 /** One small thing for a tired evening — it still counts for the week. */
 export function ShortOnTimeDialog({ today }: { today: string }) {
@@ -44,8 +35,8 @@ function ShortOnTimeBody({ today, onDone }: { today: string; onDone: () => void 
     const review = quickReview(s, today)
     const study = nextToStudy(s, today)
     return {
-      review: review ? { problem: byId.get(review.id)!, reason: review.reason } : null,
-      study: study !== null ? byId.get(study)! : null,
+      review: review ? { problem: problemById.get(review.id)!, reason: review.reason } : null,
+      study: study !== null ? problemById.get(study)! : null,
     }
   })
   const [studying, setStudying] = useState<Problem | null>(null)

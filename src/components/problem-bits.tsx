@@ -12,16 +12,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { leetcodeUrl, neetcodeUrl, videoUrl, type Problem } from '@/data/problems'
-import type { Result } from '@/lib/srs'
-import { STATUS_LABEL, type Complexity, type Status } from '@/store'
+import { RESULT_LABEL } from '@/lib/srs'
+import { STATUS_LABEL, STATUSES } from '@/lib/status'
+import type { Complexity, Result, Status } from '@/types'
 import { useUI } from '@/ui-store'
 
-export const STATUSES = Object.keys(STATUS_LABEL) as Status[]
 
-export const RESULT_TEXT: Record<Result, string> = {
+const RESULT_TEXT: Record<Result, string> = {
   solved: 'text-success-foreground',
   helped: 'text-success-foreground',
   failed: 'text-hard',
+}
+
+/** "Solved" / "With help" / "Didn't solve", in its result's color. */
+export function ResultLabel({ result }: { result: Result }) {
+  return <span className={RESULT_TEXT[result]}>{RESULT_LABEL[result]}</span>
 }
 
 /** Empty ring → half-filled (attempted) → filled check (solved) → outlined check (with help). */

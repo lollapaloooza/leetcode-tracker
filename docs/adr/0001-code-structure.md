@@ -1,6 +1,6 @@
 # ADR-001: Keep the layered structure, tighten its boundaries before adding cloud sync
 
-**Status:** Proposed
+**Status:** Accepted — implemented 2026-10-25 except item 8
 **Date:** 2026-10-25
 **Deciders:** Project owner
 
@@ -103,11 +103,18 @@ Option C provides all three without paying Option B's restructuring cost. Option
 
 ## Action Items
 
-1. [ ] `git init` and commit the current state as a baseline.
-2. [ ] Add Vitest. Cover `lib/srs`, `lib/insights`, `lib/date` and the planning queries.
-3. [ ] Create `src/types.ts`, then move domain types out of `store.ts`.
-4. [ ] Create `src/lib/planning.ts`, then move the pure queries out of `store.ts` and add `suggestForDay`.
-5. [ ] Export `problemById` from `data/problems.ts` and replace the 11 local maps.
-6. [ ] Create `src/lib/browser.ts` (`openInNewTab`, `downloadFile`) and replace the 4 copies.
-7. [ ] Split `Sidebar.tsx` into `components/sidebar/*`, and group Today files under `components/today/`.
+1. [x] `git init` and commit the current state as a baseline.
+2. [x] Add Vitest. Cover `lib/srs`, `lib/insights`, `lib/date` and the planning queries. *(Also covers `calendar`, `status` and `persistence`.)*
+3. [x] Move domain types out of `store.ts`. *(They went into a `src/types/` folder rather than a single `types.ts`.)*
+4. [x] Create `src/lib/planning.ts`, then move the pure queries out of `store.ts` and add `suggestForDay`.
+5. [x] Export `problemById` from `data/problems.ts` and replace the 11 local maps.
+6. [x] Create `src/lib/browser.ts` (`openInNewTab`, `downloadFile`) and replace the 4 copies.
+7. [x] Split `Sidebar.tsx` into `components/sidebar/*`, and group Today files under `components/today/`.
 8. [ ] Before sync: add a `StorageAdapter` interface plus record metadata for merging (separate ADR).
+
+## Implementation notes
+
+- **Types as `.ts`, not `.d.ts`.** The `src/types/` modules hold only `export type`/`interface`, so they compile to nothing anyway. `.d.ts` files would be skipped by `skipLibCheck: true`, and mistakes in them would never be reported. Catalog types (`Problem`, `Topic`, `Difficulty`) stay with the catalog in `data/problems.ts`, because `Topic` is derived from its `TOPICS` list. `@/types` re-exports them, so there is one import path for every type.
+- **`normalize()` moved out of the store**, unlike the plan above. It now lives in `lib/persistence.ts` with the defaults and limits, so it can be tested without zustand. The store runs it on every load through `persist`'s `merge`, not only on version upgrades.
+- **`plan-board.ts` moved from `lib/` to `components/today/`.** It is React and dnd-kit wiring for one view, not domain logic.
+- **Status rules got their own module.** `isSolved`, `statusAfter` and the status labels live in `lib/status.ts`, and the timer arithmetic in `lib/timer.ts`.

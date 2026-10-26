@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   CalendarCheckIcon,
   CalendarPlusIcon,
@@ -28,16 +28,17 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import { leetcodeUrl, neetcodeUrl, PROBLEMS, videoUrl, type Problem } from '@/data/problems'
+import { leetcodeUrl, neetcodeUrl, PROBLEMS, problemById, videoUrl, type Problem } from '@/data/problems'
 import { addDays } from '@/lib/date'
 import { useTheme } from '@/lib/theme'
-import { goalFor, plannedFrom, STATUS_LABEL, suggestNext, useTracker } from '@/store'
+import { openInNewTab } from '@/lib/browser'
+import { STATUS_LABEL, STATUSES } from '@/lib/status'
+import { useTracker } from '@/store'
 import { useUI, type Tab } from '@/ui-store'
 import { DifficultyDot } from './DifficultyTag'
 import { PythonIcon } from './PythonIcon'
-import { STATUSES, StatusGlyph } from './problem-bits'
+import { StatusGlyph } from './problem-bits'
 
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
 
 const NAV: { tab: Tab; label: string; icon: typeof PlusIcon }[] = [
   { tab: 'today', label: 'Today', icon: CalendarCheckIcon },
@@ -52,17 +53,6 @@ export function CommandPalette({ today }: { today: string }) {
   const [problemId, setProblemId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen(!useUI.getState().paletteOpen)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [setOpen])
-
   const onOpenChange = (next: boolean) => {
     setOpen(next)
     if (!next) {
@@ -74,7 +64,7 @@ export function CommandPalette({ today }: { today: string }) {
     fn()
     onOpenChange(false)
   }
-  const problem = problemId !== null ? byId.get(problemId) : undefined
+  const problem = problemId !== null ? problemById.get(problemId) : undefined
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} title="Command palette" description="Find a problem or run a command">
@@ -142,9 +132,7 @@ function RootPage({ today, run, onPick }: { today: string; run: (fn: () => void)
           value="suggest problems for today"
           onSelect={() =>
             run(() => {
-              const s = useTracker.getState()
-              const plan = s.plans[today] ?? []
-              s.addToPlan(suggestNext(s, plannedFrom(s.plans, today), Math.max(goalFor(s, today) - plan.length, 1), today), today)
+              useTracker.getState().suggestForDay(today, today)
               ui.setTab('today')
             })
           }
@@ -158,10 +146,7 @@ function RootPage({ today, run, onPick }: { today: string; run: (fn: () => void)
           value="pick tomorrow's problems plan tomorrow"
           onSelect={() =>
             run(() => {
-              const s = useTracker.getState()
-              const tomorrow = addDays(today, 1)
-              const planned = s.plans[tomorrow] ?? []
-              s.addToPlan(suggestNext(s, plannedFrom(s.plans, today), Math.max(goalFor(s, tomorrow) - planned.length, 1), tomorrow), tomorrow)
+              useTracker.getState().suggestForDay(addDays(today, 1), today)
               ui.setTab('today')
             })
           }
@@ -222,14 +207,6 @@ function ProblemActions({
   const timerBusy = useTracker((s) => s.timer !== null)
   const t = useTracker.getState()
   const ui = useUI.getState()
-  // A real link click always opens a tab; window.open with a features string can open a popup window instead.
-  const open = (url: string) => {
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    a.click()
-  }
 
   return (
     <>
@@ -269,13 +246,13 @@ function ProblemActions({
         </CommandItem>
       </CommandGroup>
       <CommandGroup heading="Open">
-        <CommandItem value="open leetcode" onSelect={() => run(() => open(leetcodeUrl(problem)))}>
+        <CommandItem value="open leetcode" onSelect={() => run(() => openInNewTab(leetcodeUrl(problem)))}>
           <ExternalLinkIcon /> Open on LeetCode{problem.premium && ' (Premium)'}
         </CommandItem>
-        <CommandItem value="open neetcode" onSelect={() => run(() => open(neetcodeUrl(problem)))}>
+        <CommandItem value="open neetcode" onSelect={() => run(() => openInNewTab(neetcodeUrl(problem)))}>
           <ExternalLinkIcon /> Open on NeetCode
         </CommandItem>
-        <CommandItem value="watch solution video" onSelect={() => run(() => open(videoUrl(problem)))}>
+        <CommandItem value="watch solution video" onSelect={() => run(() => openInNewTab(videoUrl(problem)))}>
           <PlayIcon /> Watch solution video
         </CommandItem>
       </CommandGroup>

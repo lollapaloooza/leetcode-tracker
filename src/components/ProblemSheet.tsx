@@ -3,15 +3,16 @@ import { CheckIcon, PencilLineIcon, PlusIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { PROBLEMS, type Problem } from '@/data/problems'
+import { problemById, type Problem } from '@/data/problems'
 import { formatRelative, formatShortDay } from '@/lib/date'
 import { CONFIDENCE_LABEL, RESULT_LABEL, TARGET_MINUTES } from '@/lib/srs'
-import { STATUS_LABEL, useTracker, type Attempt, type Study } from '@/store'
+import { STATUS_LABEL } from '@/lib/status'
+import { useTracker } from '@/store'
+import type { Attempt, Study } from '@/types'
 import { useUI } from '@/ui-store'
 import { DifficultyTag } from './DifficultyTag'
 import { ComplexityTags, ProblemLinks, ResultGlyph, StatusGlyph, StudyGlyph } from './problem-bits'
 
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
 const minutesOf = (a: Attempt) => (a.seconds === null ? null : Math.max(1, Math.round(a.seconds / 60)))
 
 export function ProblemSheet({ today }: { today: string }) {
@@ -20,7 +21,7 @@ export function ProblemSheet({ today }: { today: string }) {
   // Keep showing the last problem while the drawer animates closed.
   const [shownId, setShownId] = useState(detailFor)
   if (detailFor !== null && detailFor !== shownId) setShownId(detailFor)
-  const problem = shownId !== null ? byId.get(shownId) : undefined
+  const problem = shownId !== null ? problemById.get(shownId) : undefined
 
   return (
     <Sheet open={detailFor !== null} onOpenChange={(open) => !open && closeDetail()}>

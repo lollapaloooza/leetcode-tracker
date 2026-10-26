@@ -2,16 +2,16 @@ import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObj
 import { XIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PROBLEMS } from '@/data/problems'
+import { problemById } from '@/data/problems'
 import { addDays, formatDay, parseDate } from '@/lib/date'
 import { activityByDay, lastWeekSummary } from '@/lib/insights'
-import { CONFIDENCE_LABEL, RESULT_LABEL, TARGET_MINUTES } from '@/lib/srs'
-import { useTracker, type Attempt, type Study } from '@/store'
+import { CONFIDENCE_LABEL, TARGET_MINUTES } from '@/lib/srs'
+import { useTracker } from '@/store'
+import type { Attempt, Study } from '@/types'
 import { DifficultyDot } from './DifficultyTag'
 import { EmptyState } from './EmptyState'
-import { ProblemTitle, RESULT_TEXT, ResultGlyph, StatusGlyph, StudyGlyph } from './problem-bits'
+import { ProblemTitle, ResultGlyph, ResultLabel, StatusGlyph, StudyGlyph } from './problem-bits'
 
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
 const DAYS_PER_PAGE = 14
 
 type Entry = { kind: 'attempt'; attempt: Attempt } | { kind: 'study'; study: Study } | { kind: 'manual'; id: number }
@@ -24,7 +24,7 @@ export function HistoryView({ today }: { today: string }) {
   const [pages, setPages] = useState(1)
 
   const activity = useMemo(() => activityByDay(attempts, plans, studies), [attempts, plans, studies])
-  const summary = useMemo(() => lastWeekSummary(attempts, byId, today), [attempts, today])
+  const summary = useMemo(() => lastWeekSummary(attempts, problemById, today), [attempts, today])
 
   const days = useMemo(() => {
     const byDay = new Map<string, Entry[]>()
@@ -274,7 +274,7 @@ function DayGroup({ day, entries, showHeading }: { day: string; entries: Entry[]
 
 function HistoryRow({ entry }: { entry: Entry }) {
   const id = entry.kind === 'attempt' ? entry.attempt.id : entry.kind === 'study' ? entry.study.id : entry.id
-  const problem = byId.get(id)
+  const problem = problemById.get(id)
   if (!problem) return null
   const a = entry.kind === 'attempt' ? entry.attempt : null
   const minutes = a && a.seconds !== null ? Math.max(1, Math.round(a.seconds / 60)) : null
@@ -290,7 +290,7 @@ function HistoryRow({ entry }: { entry: Entry }) {
           <DifficultyDot difficulty={problem.difficulty} />
           {a ? (
             <>
-              <span className={RESULT_TEXT[a.result]}>{RESULT_LABEL[a.result]}</span>
+              <ResultLabel result={a.result} />
               {a.result === 'solved' && <span>· {CONFIDENCE_LABEL[a.confidence]}</span>}
               <span>· {review ? 'Review' : 'New'}</span>
               <span className="truncate max-sm:hidden">· {problem.topic}</span>

@@ -1,14 +1,6 @@
-import type { Problem, Topic } from '@/data/problems'
-import type { Attempt, PlanItem, Study } from '@/store'
+import type { Attempt, InterviewTarget, PlanItem, Problem, Study, Topic } from '@/types'
 import { addDays, diffDays, weekStart } from './date'
 import { TARGET_MINUTES } from './srs'
-
-export interface InterviewTarget {
-  date: string
-  /** When the target was set, and how many were solved then — the start of the pace line. */
-  setOn: string
-  solvedAtSet: number
-}
 
 export interface Pace {
   daysLeft: number
@@ -97,7 +89,7 @@ export interface PeriodSummary {
 }
 
 /** The last 7 days (today included) against the 7 before. */
-export function lastWeekSummary(attempts: Attempt[], byId: Map<number, Problem>, today: string): PeriodSummary {
+export function lastWeekSummary(attempts: Attempt[], byId: ReadonlyMap<number, Problem>, today: string): PeriodSummary {
   const start = addDays(today, -6)
   const prevStart = addDays(today, -13)
   const recent = attempts.filter((a) => a.date >= start && a.date <= today)
@@ -132,7 +124,7 @@ export interface TopicFocus {
  */
 export function weakTopics(
   attempts: Attempt[],
-  byId: Map<number, Problem>,
+  byId: ReadonlyMap<number, Problem>,
   today: string,
   { days = 60, minAttempts = 2, limit = 3 } = {},
 ): TopicFocus[] {

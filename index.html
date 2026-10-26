@@ -5,6 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeetCode Tracker</title>
+    <style>
+      /* Paint the theme's background before the stylesheet arrives — in dev, Vite injects it with
+         JavaScript after the first paint, which flashed white. Keep in sync with --background in src/index.css. */
+      html { background-color: #f6f8fa; color-scheme: light; }
+      html.dark { background-color: #0d1117; color-scheme: dark; }
+    </style>
     <script>
       // Apply the theme before first paint (shadcn's dark mode is class-based).
       // A choice from the toggle wins; until one is made, follow the OS. Key matches src/lib/theme.ts.

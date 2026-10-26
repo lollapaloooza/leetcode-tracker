@@ -1,109 +1,12 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { PROBLEMS, type Topic } from '@/data/problems'
-import { addDays, isWeekend, localDate } from '@/lib/date'
-import type { InterviewTarget } from '@/lib/insights'
-import { initialReview, isDue, nextReview, spreadOverdue, type Confidence, type Result, type ReviewState } from '@/lib/srs'
-
-export type Status = 'todo' | 'attempted' | 'solved' | 'helped'
-
-export const STATUS_LABEL: Record<Status, string> = {
-  todo: 'Not started',
-  attempted: 'Attempted',
-  solved: 'Solved',
-  helped: 'Solved with help',
-}
-
-export const isSolved = (s: Status | undefined) => s === 'solved' || s === 'helped'
-
-export interface ProblemProgress {
-  status: Status
-  /** ISO timestamp of the last status change */
-  updatedAt: string
-}
-
-export interface PlanItem {
-  id: number
-  done: boolean
-  /** Key of the attempt that completed this item, if it was logged */
-  attempt?: string
-}
-
-export interface Attempt {
-  key: string
-  id: number
-  /** Local date the attempt was logged */
-  date: string
-  at: string
-  /** null when untimed */
-  seconds: number | null
-  result: Result
-  confidence: Confidence
-  /** What changed, so the attempt can be undone */
-  prev: { status?: Status; review?: ReviewState; planned: boolean; done: boolean }
-}
-
-export interface TimerState {
-  id: number
-  /** Epoch ms when the current running stretch began; null while paused */
-  startedAt: number | null
-  /** ms accumulated before the current stretch */
-  elapsed: number
-}
-
-/** Big-O for a problem's solution, as typed — e.g. "O(n log n)" */
-export interface Complexity {
-  time: string
-  space: string
-}
-
-/** "Watch the solution, write the key idea" — practice that counts, without marking the problem solved */
-export interface Study {
-  key: string
-  id: number
-  date: string
-  at: string
-}
-
-export interface TrackerData {
-  progress: Record<number, ProblemProgress>
-  /** Day plans keyed by local date (YYYY-MM-DD); past days are kept as history */
-  plans: Record<string, PlanItem[]>
-  /** Problems to plan on a weekday / on a weekend day */
-  weekdayGoal: number
-  weekendGoal: number
-  /** Practice days per week that make a good week (and keep the streak going) */
-  weeklyDays: number
-  /** Suggest from the core NeetCode 150 before the other 100 */
-  coreFirst: boolean
-  attempts: Attempt[]
-  studies: Study[]
-  reviews: Record<number, ReviewState>
-  /** One-line key idea per problem — the pattern cheat sheet */
-  notes: Record<number, string>
-  complexity: Record<number, Complexity>
-  interview: InterviewTarget | null
-  timer: TimerState | null
-  /** Day the welcome-back prompt was last handled */
-  comebackAt: string | null
-}
-
-export type GoalKind = 'weekdayGoal' | 'weekendGoal' | 'weeklyDays'
-
-export const GOAL_LIMITS: Record<GoalKind, [min: number, max: number]> = {
-  weekdayGoal: [1, 10],
-  weekendGoal: [1, 10],
-  weeklyDays: [1, 7],
-}
-
-export interface AttemptInput {
-  seconds: number | null
-  result: Result
-  confidence: Confidence
-  note: string
-  time: string
-  space: string
-}
+import { addDays } from '@/lib/date'
+import { DEFAULTS, exportable, GOAL_LIMITS, normalize, STORAGE_KEY, STORAGE_VERSION } from '@/lib/persistence'
+import { plannedFrom, solvedCount, suggestionCount, suggestNext } from '@/lib/planning'
+import { initialReview, nextReview, spreadOverdue } from '@/lib/srs'
+import { isSolved, statusAfter } from '@/lib/status'
+import { timerElapsed } from '@/lib/timer'
+import type { Attempt, AttemptInput, GoalKind, PlanItem, Status, TrackerData } from '@/types'
 
 interface TrackerActions {
   setStatus: (id: number, status: Status, today: string) => void
@@ -117,6 +20,8 @@ interface TrackerActions {
   reorderPlan: (date: string, ids: number[]) => void
   /** Postpone (or pull forward) an unfinished problem to another day's list */
   moveToDay: (id: number, from: string, to: string) => void
+  /** Plan `date` toward its goal (at least one more): due reviews first, then the next new problems */
+  suggestForDay: (date: string, today: string) => void
   setGoal: (kind: GoalKind, value: number) => void
   setCoreFirst: (on: boolean) => void
   logStudy: (id: number, note: string, today: string) => void
@@ -133,47 +38,7 @@ interface TrackerActions {
 
 export type TrackerState = TrackerData & TrackerActions
 
-const DEFAULTS: TrackerData = {
-  progress: {},
-  plans: {},
-  weekdayGoal: 1,
-  weekendGoal: 3,
-  weeklyDays: 4,
-  coreFirst: true,
-  attempts: [],
-  studies: [],
-  reviews: {},
-  notes: {},
-  complexity: {},
-  interview: null,
-  timer: null,
-  comebackAt: null,
-}
-
 const now = () => new Date().toISOString()
-
-export const timerElapsed = (t: TimerState, at: number) =>
-  t.elapsed + (t.startedAt === null ? 0 : Math.max(0, at - t.startedAt))
-
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
-const CORE_FIRST = [...PROBLEMS.filter((p) => p.core), ...PROBLEMS.filter((p) => !p.core)]
-
-/** NeetCode order, optionally with the core 150 pulled ahead of the other 100. */
-export const problemOrder = (coreFirst: boolean) => (coreFirst ? CORE_FIRST : PROBLEMS)
-
-/** How many problems to plan on a given day. */
-export const goalFor = (s: Pick<TrackerData, 'weekdayGoal' | 'weekendGoal'>, date: string) =>
-  isWeekend(date) ? s.weekendGoal : s.weekdayGoal
-
-const solvedCount = (progress: TrackerData['progress']) =>
-  PROBLEMS.reduce((n, p) => n + (isSolved(progress[p.id]?.status) ? 1 : 0), 0)
-
-/** A logged attempt can raise a status but never lower it — reviews track regressions instead. */
-function statusAfter(current: Status | undefined, result: Result): Status {
-  if (result === 'solved') return 'solved'
-  if (result === 'helped') return current === 'solved' ? 'solved' : 'helped'
-  return isSolved(current) ? current! : 'attempted'
-}
 
 function withPlanItem(plans: TrackerData['plans'], day: string, id: number, patch: Partial<PlanItem> | null) {
   const plan = plans[day] ?? []
@@ -191,24 +56,9 @@ function omit<T>(record: Record<number, T>, id: number): Record<number, T> {
   return next
 }
 
-/** Fill in fields added after v1 so old saves and backups keep working. */
-export function normalize(raw: Partial<TrackerData>): TrackerData {
-  const data: TrackerData = { ...DEFAULTS, ...raw, timer: raw.timer ?? null }
-  // v2 had one daily goal; v3 plans weekdays and weekends separately (defaults: 1 and 3).
-  delete (data as TrackerData & { dailyGoal?: number }).dailyGoal
-  if (!raw.reviews) {
-    const reviews: Record<number, ReviewState> = {}
-    for (const [id, p] of Object.entries(data.progress)) {
-      if (isSolved(p.status)) reviews[Number(id)] = initialReview(p.status === 'solved' ? 'solved' : 'helped', localDate(new Date(p.updatedAt)))
-    }
-    data.reviews = reviews
-  }
-  return data
-}
-
 export const useTracker = create<TrackerState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...DEFAULTS,
 
       setStatus: (id, status, today) =>
@@ -305,6 +155,11 @@ export const useTracker = create<TrackerState>()(
           }
         }),
 
+      suggestForDay: (date, today) => {
+        const s = get()
+        s.addToPlan(suggestNext(s, plannedFrom(s.plans, today), suggestionCount(s, date), date), date)
+      },
+
       setGoal: (kind, value) => {
         const [min, max] = GOAL_LIMITS[kind]
         set({ [kind]: Math.min(max, Math.max(min, value)) })
@@ -356,121 +211,16 @@ export const useTracker = create<TrackerState>()(
 
       cancelTimer: () => set({ timer: null }),
 
-      importData: (data) => set(normalize(data as Partial<TrackerData>)),
+      importData: (data) => set(normalize(data)),
     }),
     {
-      name: 'leetcode-tracker',
-      version: 3,
+      name: STORAGE_KEY,
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (s): TrackerData => ({ ...exportable(s), timer: s.timer }),
-      migrate: (persisted) => normalize(persisted as Partial<TrackerData>),
+      // Every load is checked, not only version upgrades: a bad save loses its bad entries, not the app.
+      migrate: (persisted) => normalize(persisted),
+      merge: (persisted, current) => ({ ...current, ...normalize(persisted) }),
     },
   ),
 )
-
-/** Everything worth backing up (a running timer isn't). */
-export function exportable(s: TrackerData): Omit<TrackerData, 'timer'> {
-  const { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, notes, complexity, interview, comebackAt } = s
-  return { progress, plans, weekdayGoal, weekendGoal, weeklyDays, coreFirst, attempts, studies, reviews, notes, complexity, interview, comebackAt }
-}
-
-export function isTrackerData(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return (
-    typeof v.progress === 'object' && v.progress !== null &&
-    typeof v.plans === 'object' && v.plans !== null
-  )
-}
-
-/** Everything planned from `date` on — so suggestions don't pick a problem that's already waiting on a later day. */
-export function plannedFrom(plans: TrackerData['plans'], date: string): PlanItem[] {
-  return Object.entries(plans).flatMap(([day, plan]) => (day >= date ? plan : []))
-}
-
-/** Problems whose review is due today or earlier, oldest first. */
-export function dueReviews(reviews: TrackerData['reviews'], today: string): number[] {
-  return Object.entries(reviews)
-    .filter(([, r]) => isDue(r, today))
-    .sort(([, a], [, b]) => a.due!.localeCompare(b.due!))
-    .map(([id]) => Number(id))
-}
-
-/** Due reviews first (they're what you're about to forget), then the next unsolved in NeetCode order. */
-export function suggestNext(
-  s: Pick<TrackerData, 'progress' | 'reviews' | 'coreFirst'>,
-  planned: PlanItem[],
-  count: number,
-  today: string,
-): number[] {
-  const taken = new Set(planned.map((p) => p.id))
-  const picks = dueReviews(s.reviews, today).filter((id) => !taken.has(id)).slice(0, count)
-  for (const p of problemOrder(s.coreFirst)) {
-    if (picks.length >= count) break
-    if (!taken.has(p.id) && !picks.includes(p.id) && !isSolved(s.progress[p.id]?.status)) picks.push(p.id)
-  }
-  return picks
-}
-
-/**
- * One problem to practice a topic: the next unsolved one in NeetCode order, else a due review,
- * else the solved one you touched longest ago.
- */
-export function nextInTopic(
-  s: Pick<TrackerData, 'progress' | 'reviews' | 'attempts' | 'coreFirst'>,
-  topic: Topic,
-  planned: PlanItem[],
-  today: string,
-): number | null {
-  const taken = new Set(planned.map((p) => p.id))
-  const pool = problemOrder(s.coreFirst).filter((p) => p.topic === topic && !taken.has(p.id))
-  const unsolved = pool.find((p) => !isSolved(s.progress[p.id]?.status))
-  if (unsolved) return unsolved.id
-  const due = pool.find((p) => isDue(s.reviews[p.id], today))
-  if (due) return due.id
-  const lastTouched = (id: number) => s.attempts.findLast((a) => a.id === id)?.date ?? ''
-  return pool.sort((a, b) => lastTouched(a.id).localeCompare(lastTouched(b.id)))[0]?.id ?? null
-}
-
-const lastTouched = (attempts: Attempt[], id: number) => attempts.findLast((a) => a.id === id)?.date ?? ''
-
-/**
- * A ~20-minute task for a low-energy day: a due review (easiest first), else a quick re-solve of
- * an Easy you've solved before (the one you touched longest ago).
- */
-export function quickReview(
-  s: Pick<TrackerData, 'progress' | 'reviews' | 'attempts' | 'plans'>,
-  today: string,
-): { id: number; reason: string } | null {
-  const planned = new Set((s.plans[today] ?? []).map((p) => p.id))
-  const rank = { Easy: 0, Medium: 1, Hard: 2 }
-  const due = dueReviews(s.reviews, today)
-    .map((id) => byId.get(id))
-    .filter((p): p is (typeof PROBLEMS)[number] => p !== undefined && p.difficulty !== 'Hard' && !planned.has(p.id))
-    .sort((a, b) => rank[a.difficulty] - rank[b.difficulty])
-  if (due[0]) return { id: due[0].id, reason: 'Due for review' }
-  const easy = PROBLEMS.filter((p) => p.difficulty === 'Easy' && s.progress[p.id]?.status === 'solved' && !planned.has(p.id))
-  if (easy.length === 0) return null
-  easy.sort((a, b) => lastTouched(s.attempts, a.id).localeCompare(lastTouched(s.attempts, b.id)))
-  return { id: easy[0].id, reason: 'Quick re-solve of an Easy you know' }
-}
-
-/** Next problem you haven't solved or studied, for "watch & note" (skips today's and tomorrow's plans). */
-export function nextToStudy(s: Pick<TrackerData, 'progress' | 'studies' | 'plans' | 'coreFirst'>, today: string): number | null {
-  const skip = new Set([...(s.plans[today] ?? []), ...(s.plans[addDays(today, 1)] ?? [])].map((p) => p.id))
-  const studied = new Set(s.studies.map((st) => st.id))
-  return (
-    problemOrder(s.coreFirst).find((p) => !isSolved(s.progress[p.id]?.status) && !studied.has(p.id) && !skip.has(p.id))?.id ??
-    null
-  )
-}
-
-/** Restart with a win: an Easy you solved on your own (longest ago first), else the first unsolved Easy. */
-export function restartPick(s: Pick<TrackerData, 'progress' | 'attempts' | 'coreFirst'>): number | null {
-  const solvedEasy = PROBLEMS.filter((p) => p.difficulty === 'Easy' && s.progress[p.id]?.status === 'solved')
-  if (solvedEasy.length > 0) {
-    return solvedEasy.sort((a, b) => lastTouched(s.attempts, a.id).localeCompare(lastTouched(s.attempts, b.id)))[0].id
-  }
-  return problemOrder(s.coreFirst).find((p) => p.difficulty === 'Easy' && !isSolved(s.progress[p.id]?.status))?.id ?? null
-}
-

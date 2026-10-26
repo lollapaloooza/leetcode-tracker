@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { PROBLEMS } from '@/data/problems'
+import { problemById } from '@/data/problems'
 import { useTracker } from '@/store'
 
 /** The two lists you can drag between. */
@@ -21,8 +21,7 @@ export type Zone = 'today' | 'tomorrow'
 export type ZoneLists = Record<Zone, string[]>
 
 const ZONES: Zone[] = ['today', 'tomorrow']
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
-const titleOf = (sid: UniqueIdentifier) => byId.get(problemIdOf(sid))?.title ?? 'Problem'
+const titleOf = (sid: UniqueIdentifier) => problemById.get(problemIdOf(sid))?.title ?? 'Problem'
 
 /** A problem can be planned on both days, so sortable ids carry the list they started in. */
 export const sortableId = (zone: Zone, id: number) => `${zone}:${id}`

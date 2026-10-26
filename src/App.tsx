@@ -1,26 +1,30 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import { CalendarCheckIcon, HistoryIcon, LayoutListIcon, MoonIcon, NotebookPenIcon, SearchIcon, SunIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CalendarDialog } from '@/components/CalendarDialog'
-import { CommandPalette } from '@/components/CommandPalette'
-import { HistoryView } from '@/components/HistoryView'
+import { lazyComponent, preloadLazyComponents } from '@/components/lazy'
 import { LogAttemptDialog } from '@/components/LogAttemptDialog'
-import { PatternsView } from '@/components/PatternsView'
-import { ProblemSheet } from '@/components/ProblemSheet'
 import { ProblemsView } from '@/components/ProblemsView'
 import { PythonIcon } from '@/components/PythonIcon'
-import { PythonSheet } from '@/components/PythonSheet'
-import { ShortOnTimeDialog } from '@/components/ShortOnTimeDialog'
-import { Sidebar } from '@/components/Sidebar'
+import { Sidebar } from '@/components/sidebar/Sidebar'
 import { LiveDot } from '@/components/TimerControls'
-import { TodayView } from '@/components/TodayView'
-import { PROBLEMS } from '@/data/problems'
+import { TodayView } from '@/components/today/TodayView'
+import { problemById } from '@/data/problems'
 import { formatDuration, useNow, useToday } from '@/lib/date'
 import { useTheme } from '@/lib/theme'
-import { timerElapsed, useTracker } from '@/store'
+import { timerElapsed } from '@/lib/timer'
+import { useTracker } from '@/store'
 import { useUI, type Tab } from '@/ui-store'
+
+// Not needed for the first screen: each loads in its own chunk, in the background after startup.
+const HistoryView = lazyComponent(() => import('@/components/HistoryView').then((m) => m.HistoryView))
+const PatternsView = lazyComponent(() => import('@/components/PatternsView').then((m) => m.PatternsView))
+const CommandPalette = lazyComponent(() => import('@/components/CommandPalette').then((m) => m.CommandPalette))
+const ProblemSheet = lazyComponent(() => import('@/components/ProblemSheet').then((m) => m.ProblemSheet))
+const PythonSheet = lazyComponent(() => import('@/components/PythonSheet').then((m) => m.PythonSheet))
+const ShortOnTimeDialog = lazyComponent(() => import('@/components/ShortOnTimeDialog').then((m) => m.ShortOnTimeDialog))
+const CalendarDialog = lazyComponent(() => import('@/components/CalendarDialog').then((m) => m.CalendarDialog))
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
@@ -30,6 +34,8 @@ export default function App() {
   const setTab = useUI((s) => s.setTab)
   const plannedCount = useTracker((s) => s.plans[today]?.length ?? 0)
   const notesCount = useTracker((s) => Object.keys(s.notes).length)
+
+  useEffect(preloadLazyComponents, [])
 
   return (
     <div className="min-h-svh">
@@ -53,10 +59,14 @@ export default function App() {
               <ProblemsView today={today} />
             </TabsContent>
             <TabsContent value="patterns">
-              <PatternsView />
+              <Suspense fallback={null}>
+                <PatternsView />
+              </Suspense>
             </TabsContent>
             <TabsContent value="history">
-              <HistoryView today={today} />
+              <Suspense fallback={null}>
+                <HistoryView today={today} />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </main>
@@ -66,14 +76,59 @@ export default function App() {
         </aside>
       </div>
 
-      <ProblemSheet today={today} />
-      <LogAttemptDialog today={today} />
-      <CommandPalette today={today} />
-      <PythonSheet />
-      <ShortOnTimeDialog today={today} />
-      <CalendarDialog />
+      <Overlays today={today} />
     </div>
   )
+}
+
+/** Dialogs and drawers. Each lazy one mounts the first time it opens, so its code loads only when needed. */
+function Overlays({ today }: { today: string }) {
+  const paletteOpen = useUI((s) => s.paletteOpen)
+  const detailOpen = useUI((s) => s.detailFor !== null)
+  const pythonOpen = useUI((s) => s.pythonOpen)
+  const shortOnTimeOpen = useUI((s) => s.shortOnTimeOpen)
+  const calendarOpen = useUI((s) => s.calendarOpen)
+
+  // ⌘K lives here rather than in the palette, so it works before the palette has ever loaded.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        const ui = useUI.getState()
+        ui.setPaletteOpen(!ui.paletteOpen)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  return (
+    <>
+      <LogAttemptDialog today={today} />
+      <MountWhenOpened open={paletteOpen}>
+        <CommandPalette today={today} />
+      </MountWhenOpened>
+      <MountWhenOpened open={detailOpen}>
+        <ProblemSheet today={today} />
+      </MountWhenOpened>
+      <MountWhenOpened open={pythonOpen}>
+        <PythonSheet />
+      </MountWhenOpened>
+      <MountWhenOpened open={shortOnTimeOpen}>
+        <ShortOnTimeDialog today={today} />
+      </MountWhenOpened>
+      <MountWhenOpened open={calendarOpen}>
+        <CalendarDialog />
+      </MountWhenOpened>
+    </>
+  )
+}
+
+/** Renders its children from the first time `open` is true, and keeps them, so closing still animates. */
+function MountWhenOpened({ open, children }: { open: boolean; children: ReactNode }) {
+  const [opened, setOpened] = useState(open)
+  if (open && !opened) setOpened(true)
+  return opened ? <Suspense fallback={null}>{children}</Suspense> : null
 }
 
 /** GitHub UnderlineNav: muted icon, label, counter — coral underline on the active tab. */
@@ -175,7 +230,7 @@ function TimerPill() {
   const running = Boolean(timer?.startedAt)
   const now = useNow(running)
   if (!timer || tab === 'today') return null
-  const problem = PROBLEMS.find((p) => p.id === timer.id)
+  const problem = problemById.get(timer.id)
   return (
     <Button
       variant="ghost"
@@ -198,7 +253,7 @@ function DocumentTitle() {
   const timer = useTracker((s) => s.timer)
   const running = Boolean(timer?.startedAt)
   const now = useNow(running)
-  const problem = timer ? PROBLEMS.find((p) => p.id === timer.id) : undefined
+  const problem = timer ? problemById.get(timer.id) : undefined
   const title =
     timer && problem
       ? `${running ? `▶ ${formatDuration(timerElapsed(timer, now))}` : '⏸ Paused'} · ${problem.title} — ${BASE_TITLE}`

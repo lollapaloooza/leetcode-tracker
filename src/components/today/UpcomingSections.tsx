@@ -3,15 +3,17 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CalendarCheckIcon, SparklesIcon, SunriseIcon, XIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PROBLEMS, type Problem } from '@/data/problems'
+import { DifficultyDot } from '@/components/DifficultyTag'
+import { ProblemTitle, RowMenu, type RowAction } from '@/components/problem-bits'
+import { problemById } from '@/data/problems'
 import { addDays, formatDay } from '@/lib/date'
-import { goalFor, isSolved, plannedFrom, suggestNext, useTracker, type PlanItem } from '@/store'
-import { DifficultyDot } from './DifficultyTag'
-import { problemIdOf, useSortableRow, useZone } from '@/lib/plan-board'
+import { goalFor } from '@/lib/planning'
+import { isSolved } from '@/lib/status'
+import { useTracker } from '@/store'
+import type { PlanItem, Problem } from '@/types'
+import { problemIdOf, useSortableRow, useZone } from './plan-board'
 import { DragHandle, HandleSpacer } from './PlanBoard'
-import { ProblemTitle, RowMenu, type RowAction } from './problem-bits'
 
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
 const EMPTY: PlanItem[] = []
 
 /** Choosing a problem is the hardest step after work — so do it the night before. */
@@ -21,12 +23,10 @@ export function TomorrowSection({ today, ids }: { today: string; ids: string[] }
   const goal = useTracker((s) => goalFor(s, tomorrow))
   const progress = useTracker((s) => s.progress)
   const studies = useTracker((s) => s.studies)
+  const suggestForDay = useTracker((s) => s.suggestForDay)
   const { ref: dropRef, isOver } = useZone('tomorrow', ids.length === 0)
 
-  const pick = () => {
-    const s = useTracker.getState()
-    s.addToPlan(suggestNext(s, plannedFrom(s.plans, today), Math.max(goal - planned.length, 1), tomorrow), tomorrow)
-  }
+  const pick = () => suggestForDay(tomorrow, today)
 
   return (
     <section aria-label="Tomorrow" className="mt-3">
@@ -54,7 +54,7 @@ export function TomorrowSection({ today, ids }: { today: string; ids: string[] }
         <ul ref={dropRef} aria-label="Tomorrow's problems" className="divide-y overflow-hidden rounded-xl bg-card/60 ring-1 ring-border">
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             {ids.map((sid) => {
-              const problem = byId.get(problemIdOf(sid))
+              const problem = problemById.get(problemIdOf(sid))
               if (!problem) return null
               const studiedToday = studies.some((st) => st.id === problem.id && st.date === today)
               const tag = studiedToday ? 'Watched today — now solve it' : isSolved(progress[problem.id]?.status) ? 'Review' : 'New'
@@ -95,7 +95,7 @@ export function LaterSection({ today }: { today: string }) {
   const later = Object.keys(plans)
     .filter((day) => day > tomorrow && plans[day].length > 0)
     .sort()
-    .flatMap((day) => plans[day].map((item) => ({ day, problem: byId.get(item.id) })))
+    .flatMap((day) => plans[day].map((item) => ({ day, problem: problemById.get(item.id) })))
     .filter((x): x is { day: string; problem: Problem } => x.problem !== undefined)
   if (later.length === 0) return null
 

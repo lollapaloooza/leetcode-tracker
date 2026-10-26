@@ -5,14 +5,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { PROBLEMS } from '@/data/problems'
+import { problemById } from '@/data/problems'
 import { formatRelative } from '@/lib/date'
-import { CONFIDENCE_LABEL, nextReview, TARGET_MINUTES, type Confidence, type Result } from '@/lib/srs'
-import { timerElapsed, useTracker } from '@/store'
+import { CONFIDENCE_LABEL, nextReview, TARGET_MINUTES } from '@/lib/srs'
+import { timerElapsed } from '@/lib/timer'
+import { useTracker } from '@/store'
+import type { Confidence, Result } from '@/types'
 import { useUI, type LogTarget } from '@/ui-store'
 import { DifficultyTag } from './DifficultyTag'
 
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
 
 const RESULTS: { value: Result; label: string; icon: typeof CheckIcon }[] = [
   { value: 'solved', label: 'Solved', icon: CheckIcon },
@@ -40,7 +41,7 @@ export function LogAttemptDialog({ today }: { today: string }) {
 }
 
 function LogForm({ target, today, onDone }: { target: LogTarget; today: string; onDone: () => void }) {
-  const problem = byId.get(target.id)!
+  const problem = problemById.get(target.id)!
   const targetMinutes = TARGET_MINUTES[problem.difficulty]
   const ids = { minutes: useId(), note: useId(), time: useId() }
 

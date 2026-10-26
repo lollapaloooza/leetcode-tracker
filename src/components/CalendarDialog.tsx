@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { downloadFile } from '@/lib/browser'
 import { buildIcs, type CalendarBlock } from '@/lib/calendar'
 import { useUI } from '@/ui-store'
 
@@ -33,13 +34,7 @@ export function CalendarDialog() {
   const chosen = blocks.filter((b) => b.enabled && b.days.length > 0 && b.time && b.minutes > 0)
 
   const download = () => {
-    const ics = buildIcs(chosen, window.location.origin)
-    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'leetcode-practice.ics'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadFile('leetcode-practice.ics', buildIcs(chosen, window.location.origin), 'text/calendar')
     setOpen(false)
   }
 

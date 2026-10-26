@@ -5,6 +5,25 @@ Scope: the whole app (`src/`, config, dependencies), ahead of the planned move t
 **Scoring:** Impact and Risk run 1–5, higher is worse. Effort runs 1–5, lower is easier.
 **Priority = (Impact + Risk) × (6 − Effort)**
 
+## Progress
+
+**Done on 2026-10-25:** #1 (git, by the owner), #2, #3, #4, #5, #6, #8, #9, #10 and #11.
+
+- 93 unit tests sit next to each module in `src/lib/`.
+- Saved data is validated field by field on every load, and there's an error screen with download and reset.
+- Import uses the app's own dialogs and shows a summary of the backup.
+- Lookups and helpers exist once.
+- The store holds only state and actions.
+- Today and the Sidebar have their own folders.
+
+**Also done:**
+- **#6:** `shadcn`, `tailwindcss` and `@tailwindcss/vite` moved to devDependencies (they're build-time only). `date-fns` (still installed by react-day-picker) and the unused `ui/card` and `ui/checkbox` were removed. Vite went 8.3.0 → 8.3.4 and `source-map-js` → 1.2.2 for advisory fixes. `npm audit --omit=dev` is now clean. The 8 advisories left are all inside the shadcn CLI's own tooling (MCP SDK, express, zod, undici), which runs only when you invoke the CLI. Its fix, shadcn 4.22.x, was a week old at the time, so upgrade once it's settled (early November).
+- **#8:** `npm run generate:problems` rebuilds the list from neetcode.io's bundle (now also the source of the NeetCode 150 flag) plus GitHub's premium flags. It reproduced all 250 rows exactly, and it refuses to write if the data looks wrong.
+- **#11:** the first load went from 680 kB to 549 kB (gzip 211 → 174 kB). The date picker (72 kB), ⌘K, the Python sheet, the dialogs, History and Patterns load in the background after the first paint.
+- **Lint:** the last warning (`RESULT_TEXT`) became a `<ResultLabel>` component.
+
+**Still open:** #7 (sync readiness).
+
 ## Prioritized list
 
 | # | Item | Type | Impact | Risk | Effort | Priority |

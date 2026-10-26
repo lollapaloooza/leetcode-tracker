@@ -1,8 +1,5 @@
-import type { Difficulty } from '@/data/problems'
+import type { Confidence, Difficulty, Result, ReviewState } from '@/types'
 import { addDays } from './date'
-
-export type Result = 'solved' | 'helped' | 'failed'
-export type Confidence = 1 | 2 | 3
 
 export const RESULT_LABEL: Record<Result, string> = {
   solved: 'Solved',
@@ -25,13 +22,6 @@ export const TARGET_MINUTES: Record<Difficulty, number> = {
 
 /** Days until the next review after each clean solve: 3 → 7 → 21 → 60, then mastered. */
 export const REVIEW_INTERVALS = [3, 7, 21, 60] as const
-
-export interface ReviewState {
-  /** Index into REVIEW_INTERVALS that produced `due`; -1 means relearning (back tomorrow). */
-  step: number
-  /** Next review date (YYYY-MM-DD), or null once mastered. */
-  due: string | null
-}
 
 /**
  * Needing help or failing sends a problem back tomorrow. A clean solve stretches the interval,

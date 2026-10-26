@@ -2,14 +2,12 @@ import type { ComponentProps, ReactNode } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { GripVerticalIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PROBLEMS } from '@/data/problems'
-import { BoardKeys, problemIdOf, type usePlanBoard } from '@/lib/plan-board'
-import { DifficultyDot, DifficultyTag } from './DifficultyTag'
-
-const byId = new Map(PROBLEMS.map((p) => [p.id, p]))
+import { DifficultyDot, DifficultyTag } from '@/components/DifficultyTag'
+import { problemById } from '@/data/problems'
+import { BoardKeys, problemIdOf, type usePlanBoard } from './plan-board'
 
 export function PlanBoard({ board, children }: { board: ReturnType<typeof usePlanBoard>; children: ReactNode }) {
-  const active = board.activeId ? byId.get(problemIdOf(board.activeId)) : undefined
+  const active = board.activeId ? problemById.get(problemIdOf(board.activeId)) : undefined
   return (
     <DndContext {...board.contextProps}>
       <BoardKeys value={board.nudge}>{children}</BoardKeys>

@@ -7,15 +7,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { Problem } from '@/data/problems'
+import { DifficultyTag } from '@/components/DifficultyTag'
+import { ProblemLinks, ProblemTitle, ResultGlyph, ResultLabel, RowMenu, StatusGlyph, type RowAction } from '@/components/problem-bits'
+import { LiveDot, TimerControls, TimerProgress } from '@/components/TimerControls'
 import { addDays, formatRelative, saturdayAhead } from '@/lib/date'
 import { RESULT_LABEL } from '@/lib/srs'
-import { isSolved, useTracker, type Attempt, type PlanItem } from '@/store'
+import { isSolved } from '@/lib/status'
+import { useTracker } from '@/store'
+import type { Attempt, PlanItem, Problem } from '@/types'
 import { useUI } from '@/ui-store'
-import { DifficultyTag } from './DifficultyTag'
 import { HandleSpacer } from './PlanBoard'
-import { ProblemLinks, ProblemTitle, RESULT_TEXT, ResultGlyph, RowMenu, StatusGlyph, type RowAction } from './problem-bits'
-import { LiveDot, TimerControls, TimerProgress } from './TimerControls'
 
 interface TodayRowProps {
   problem: Problem
@@ -69,7 +70,7 @@ export function TodayRow({ problem, item, today, lead, first, handle, ref, style
           {item.done ? (
             attempt ? (
               <>
-                <span className={RESULT_TEXT[attempt.result]}>{RESULT_LABEL[attempt.result]}</span>
+                <ResultLabel result={attempt.result} />
                 {attempt.seconds !== null && <span>· {Math.max(1, Math.round(attempt.seconds / 60))} min</span>}
                 <span>
                   · {review?.due ? `next review ${formatRelative(review.due, today)}` : 'mastered — no more reviews'}
