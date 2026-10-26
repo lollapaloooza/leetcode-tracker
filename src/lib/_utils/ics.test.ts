@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildIcs, type CalendarBlock } from './calendar'
+import { buildIcs, type CalendarBlock } from './ics'
 
 const weekdays: CalendarBlock = { days: [1, 3], time: '19:00', minutes: 30, title: 'LeetCode — one problem' }
 const sundayNoon = new Date(2026, 9, 25, 12, 0)

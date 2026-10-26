@@ -1,12 +1,23 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { addDays } from '@/lib/date'
-import { DEFAULTS, exportable, GOAL_LIMITS, normalize, STORAGE_KEY, STORAGE_VERSION } from '@/lib/persistence'
-import { plannedFrom, solvedCount, suggestionCount, suggestNext } from '@/lib/planning'
-import { initialReview, nextReview, spreadOverdue } from '@/lib/srs'
-import { isSolved, statusAfter } from '@/lib/status'
-import { timerElapsed } from '@/lib/timer'
+import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
+import { GOAL_LIMITS } from '@/lib/_consts/practice'
+import { STORAGE_KEYS } from '@/lib/_consts/storage'
+import { addDays } from '@/lib/_utils/date'
+import {
+  initialReview,
+  isSolved,
+  nextReview,
+  plannedFrom,
+  solvedCount,
+  spreadOverdue,
+  statusAfter,
+  suggestionCount,
+  suggestNext,
+  timerElapsed,
+} from '@/lib/domain'
 import type { Attempt, AttemptInput, GoalKind, PlanItem, Status, TrackerData } from '@/types'
+import { exportable, normalize, STORAGE_VERSION } from './persistence'
 
 interface TrackerActions {
   setStatus: (id: number, status: Status, today: string) => void
@@ -59,7 +70,7 @@ function omit<T>(record: Record<number, T>, id: number): Record<number, T> {
 export const useTracker = create<TrackerState>()(
   persist(
     (set, get) => ({
-      ...DEFAULTS,
+      ...TRACKER_DEFAULTS,
 
       setStatus: (id, status, today) =>
         set((s) => {
@@ -214,7 +225,7 @@ export const useTracker = create<TrackerState>()(
       importData: (data) => set(normalize(data)),
     }),
     {
-      name: STORAGE_KEY,
+      name: STORAGE_KEYS.tracker,
       version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (s): TrackerData => ({ ...exportable(s), timer: s.timer }),

@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react'
-
 /** Local calendar date as YYYY-MM-DD (not UTC, so "today" flips at your midnight). */
 export function localDate(d = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -65,30 +63,4 @@ export function formatDuration(ms: number): string {
   const m = Math.floor(total / 60)
   const s = total % 60
   return `${m}:${String(s).padStart(2, '0')}`
-}
-
-/** Today's date that re-renders when the day changes while the tab stays open. */
-export function useToday(): string {
-  const [today, setToday] = useState(localDate)
-  useEffect(() => {
-    const tick = () => setToday(localDate())
-    const timer = setInterval(tick, 60_000)
-    document.addEventListener('visibilitychange', tick)
-    return () => {
-      clearInterval(timer)
-      document.removeEventListener('visibilitychange', tick)
-    }
-  }, [])
-  return today
-}
-
-/** Current epoch ms, ticking every second while `active`. */
-export function useNow(active: boolean): number {
-  const [now, setNow] = useState(Date.now)
-  useEffect(() => {
-    if (!active) return
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [active])
-  return now
 }

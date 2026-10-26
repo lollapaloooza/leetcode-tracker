@@ -22,7 +22,7 @@ Scope: the whole app (`src/`, config, dependencies), ahead of the planned move t
 - **#11:** the first load went from 680 kB to 549 kB (gzip 211 → 174 kB). The date picker (72 kB), ⌘K, the Python sheet, the dialogs, History and Patterns load in the background after the first paint.
 - **Lint:** the last warning (`RESULT_TEXT`) became a `<ResultLabel>` component.
 
-**Still open:** #7 (sync readiness).
+**Still open:** #7 (sync readiness). [ADR-002](adr/0002-hosting-auth-sync.md) (proposed) replaces its fix plan. A three-way merge against the last synced copy handles every point below without changing the data model, so what's left is Phase 0 of that ADR: tabs sharing one copy, `merge3()` with tests, and the reset clearing the sync state.
 
 ## Prioritized list
 

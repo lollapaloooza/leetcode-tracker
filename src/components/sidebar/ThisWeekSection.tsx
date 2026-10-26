@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { CheckIcon, FlameIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { parseDate } from '@/lib/date'
-import { activityByDay, currentWeek, weeklyStreak } from '@/lib/insights'
-import { useTracker } from '@/store'
+import { cn } from '@/lib/_utils/cn'
+import { parseDate } from '@/lib/_utils/date'
+import { activityByDay, currentWeek, weeklyStreak } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 import { Section } from './Section'
 
 /** A weekly goal forgives a skipped evening; a daily streak doesn't. */

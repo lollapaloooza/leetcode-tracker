@@ -1,10 +1,9 @@
 import { useMemo } from 'react'
 import { PROBLEMS } from '@/data/problems'
-import { isSolved } from '@/lib/status'
-import { useTracker } from '@/store'
+import { DIFFICULTIES } from '@/lib/_consts/enums'
+import { isSolved } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 import type { Difficulty } from '@/types'
-
-export const DIFFICULTIES: Difficulty[] = ['Easy', 'Medium', 'Hard']
 
 /** Solved counts overall and per difficulty. */
 export function useSolvedStats() {

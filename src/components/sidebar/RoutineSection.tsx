@@ -1,10 +1,9 @@
 import { CalendarPlusIcon, MinusIcon, PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { GOAL_LIMITS } from '@/lib/persistence'
-import { useTracker } from '@/store'
+import { GOAL_LIMITS } from '@/lib/_consts/practice'
+import { useTracker, useUI } from '@/lib/store'
 import type { GoalKind } from '@/types'
-import { useUI } from '@/ui-store'
 import { Section } from './Section'
 
 export function RoutineSection() {

@@ -1,6 +1,7 @@
+// Read-only views over your practice: pace, activity, streaks, weak topics.
+import { TARGET_MINUTES } from '@/lib/_consts/practice'
+import { addDays, diffDays, weekStart } from '@/lib/_utils/date'
 import type { Attempt, InterviewTarget, PlanItem, Problem, Study, Topic } from '@/types'
-import { addDays, diffDays, weekStart } from './date'
-import { TARGET_MINUTES } from './srs'
 
 export interface Pace {
   daysLeft: number

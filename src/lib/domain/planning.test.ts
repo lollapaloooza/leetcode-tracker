@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PROBLEMS } from '@/data/problems'
+import { attempt, idOf, progressOf, tracker } from '@/test/builders'
 import type { PlanItem } from '@/types'
 import {
   dueReviews,
@@ -15,7 +16,6 @@ import {
   suggestionCount,
   suggestNext,
 } from './planning'
-import { attempt, idOf, progressOf, tracker } from './test-utils'
 
 const today = '2026-10-25' // a Sunday
 const plan = (...titles: string[]): PlanItem[] => titles.map((t) => ({ id: idOf(t), done: false }))

@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type { Difficulty } from '@/data/problems'
+import { cn } from '@/lib/_utils/cn'
 
 const DOT: Record<Difficulty, string> = {
   Easy: 'bg-easy',

@@ -1,14 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { ArrowLeftIcon, ChevronRightIcon, MonitorPlayIcon, RotateCcwIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { problemById, videoUrl, type Problem } from '@/data/problems'
-import { openInNewTab } from '@/lib/browser'
-import { nextToStudy, quickReview } from '@/lib/planning'
-import { useTracker } from '@/store'
-import { useUI } from '@/ui-store'
+import { openInNewTab } from '@/lib/_utils/browser'
+import { cn } from '@/lib/_utils/cn'
+import { nextToStudy, quickReview } from '@/lib/domain'
+import { useTracker, useUI } from '@/lib/store'
 import { DifficultyTag } from './DifficultyTag'
 
 /** One small thing for a tired evening — it still counts for the week. */

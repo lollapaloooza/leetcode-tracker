@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULTS, exportable, isTrackerData, normalize } from './persistence'
-import { attempt, idOf, progressOf } from './test-utils'
+import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
+import { attempt, idOf, progressOf } from '@/test/builders'
+import { exportable, isTrackerData, normalize } from './persistence'
 
 describe('normalize', () => {
   it('turns anything that is not an object into the defaults', () => {
-    for (const raw of [undefined, null, 'x', 42, [], [1, 2]]) expect(normalize(raw)).toEqual(DEFAULTS)
+    for (const raw of [undefined, null, 'x', 42, [], [1, 2]]) expect(normalize(raw)).toEqual(TRACKER_DEFAULTS)
   })
 
   it('fills in missing fields with defaults', () => {
     const data = normalize({ progress: progressOf('solved', 'Two Sum'), plans: {}, reviews: {} })
-    expect(data).toEqual({ ...DEFAULTS, progress: progressOf('solved', 'Two Sum') })
+    expect(data).toEqual({ ...TRACKER_DEFAULTS, progress: progressOf('solved', 'Two Sum') })
   })
 
   it("drops v2's single daily goal in favour of weekday/weekend goals", () => {
@@ -99,7 +100,7 @@ describe('normalize', () => {
 
 describe('exportable', () => {
   it('leaves out the running timer', () => {
-    const data = { ...DEFAULTS, timer: { id: 1, startedAt: 0, elapsed: 0 } }
+    const data = { ...TRACKER_DEFAULTS, timer: { id: 1, startedAt: 0, elapsed: 0 } }
     expect(exportable(data)).not.toHaveProperty('timer')
   })
 })

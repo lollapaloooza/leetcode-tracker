@@ -1,9 +1,9 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { GripVerticalIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { DifficultyDot, DifficultyTag } from '@/components/DifficultyTag'
 import { problemById } from '@/data/problems'
+import { cn } from '@/lib/_utils/cn'
 import { BoardKeys, problemIdOf, type usePlanBoard } from './plan-board'
 
 export function PlanBoard({ board, children }: { board: ReturnType<typeof usePlanBoard>; children: ReactNode }) {

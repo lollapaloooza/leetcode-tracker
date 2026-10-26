@@ -1,21 +1,20 @@
 import type { CSSProperties, ReactNode, Ref } from 'react'
 import { ArrowUpToLineIcon, CalendarDaysIcon, CheckIcon, PencilIcon, RotateCcwIcon, SunriseIcon, Undo2Icon, XIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { DifficultyTag } from '@/components/DifficultyTag'
+import { ProblemLinks, ProblemTitle, ResultGlyph, ResultLabel, RowMenu, StatusGlyph, type RowAction } from '@/components/problem-bits'
+import { LiveDot, TimerControls, TimerProgress } from '@/components/TimerControls'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { DifficultyTag } from '@/components/DifficultyTag'
-import { ProblemLinks, ProblemTitle, ResultGlyph, ResultLabel, RowMenu, StatusGlyph, type RowAction } from '@/components/problem-bits'
-import { LiveDot, TimerControls, TimerProgress } from '@/components/TimerControls'
-import { addDays, formatRelative, saturdayAhead } from '@/lib/date'
-import { RESULT_LABEL } from '@/lib/srs'
-import { isSolved } from '@/lib/status'
-import { useTracker } from '@/store'
+import { RESULT_LABEL } from '@/lib/_consts/labels'
+import { cn } from '@/lib/_utils/cn'
+import { addDays, formatRelative, saturdayAhead } from '@/lib/_utils/date'
+import { isSolved } from '@/lib/domain'
+import { useTracker, useUI } from '@/lib/store'
 import type { Attempt, PlanItem, Problem } from '@/types'
-import { useUI } from '@/ui-store'
 import { HandleSpacer } from './PlanBoard'
 
 interface TodayRowProps {

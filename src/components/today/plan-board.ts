@@ -14,7 +14,7 @@ import {
 import { arrayMove, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { problemById } from '@/data/problems'
-import { useTracker } from '@/store'
+import { useTracker } from '@/lib/store'
 
 /** The two lists you can drag between. */
 export type Zone = 'today' | 'tomorrow'

@@ -3,6 +3,97 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@/lib/domain/*", "@/lib/store/*", "@/lib/theme/*"],
+            "message": "Import the module, not its files: '@/lib/domain', '@/lib/store', '@/lib/theme'."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/_consts/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          { "patterns": [{ "group": ["@/components/**", "@/data/**", "@/lib/**"], "message": "_consts holds plain values: import types only." }] }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/_utils/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          { "patterns": [{ "group": ["@/**"], "message": "_utils is app-agnostic: it can't import from the app." }] }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/_hooks/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              { "group": ["@/components/**"], "message": "Hooks sit below the UI: they can't import components." },
+              { "group": ["@/lib/domain/*", "@/lib/store/*", "@/lib/theme/*"], "message": "Import the module, not its files." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/domain/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/**", "zustand", "zustand/**", "@/components/**", "@/lib/_hooks/**", "@/lib/store", "@/lib/store/*", "@/lib/theme", "@/lib/theme/*"],
+                "message": "domain is pure rules: no React, no state, no UI."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/store/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/**", "@/components/**", "@/lib/_hooks/**", "@/lib/theme", "@/lib/theme/*"],
+                "message": "The store holds state and actions: no React, no UI."
+              },
+              { "group": ["@/lib/domain/*"], "message": "Import the module, not its files." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/theme/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              { "group": ["@/components/**", "@/lib/domain", "@/lib/domain/*", "@/lib/store", "@/lib/store/*"], "message": "The theme knows nothing about the tracker or the UI." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

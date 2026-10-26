@@ -1,27 +1,7 @@
-import type { Confidence, Difficulty, Result, ReviewState } from '@/types'
-import { addDays } from './date'
-
-export const RESULT_LABEL: Record<Result, string> = {
-  solved: 'Solved',
-  helped: 'With help',
-  failed: "Didn't solve",
-}
-
-export const CONFIDENCE_LABEL: Record<Confidence, string> = {
-  1: 'Shaky',
-  2: 'OK',
-  3: 'Solid',
-}
-
-/** Interview-style time boxes. */
-export const TARGET_MINUTES: Record<Difficulty, number> = {
-  Easy: 15,
-  Medium: 25,
-  Hard: 40,
-}
-
-/** Days until the next review after each clean solve: 3 → 7 → 21 → 60, then mastered. */
-export const REVIEW_INTERVALS = [3, 7, 21, 60] as const
+// Spaced repetition: when a problem comes back for review.
+import { REVIEW_INTERVALS } from '@/lib/_consts/practice'
+import { addDays } from '@/lib/_utils/date'
+import type { Confidence, Result, ReviewState } from '@/types'
 
 /**
  * Needing help or failing sends a problem back tomorrow. A clean solve stretches the interval,

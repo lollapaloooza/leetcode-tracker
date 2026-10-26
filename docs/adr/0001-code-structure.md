@@ -39,7 +39,7 @@ Keep the layered architecture and tighten it incrementally (Option C):
 2. Move the pure planning queries out of `store.ts` into `src/lib/planning.ts`. The store keeps state, actions and migration. Add store actions for repeated workflows such as `suggestForDay(date)`.
 3. Export one `problemById` from `src/data/problems.ts`, and shared `openInNewTab` / `downloadFile` helpers from `src/lib/browser.ts`.
 4. Use feature folders only where files have outgrown one module: `components/today/` (TodayView, TodayList, TodayRow, WelcomeBack, UpcomingSections, PlanBoard) and `components/sidebar/` (one file per section). Leave the small views flat.
-5. Before sync work, put persistence behind a `StorageAdapter` (local now, local + remote later). Give records the metadata that merging needs (`updatedAt` per map entry, tombstones for removed attempts).
+5. Before sync work, put persistence behind a `StorageAdapter` (local now, local + remote later). Give records the metadata that merging needs (`updatedAt` per map entry, tombstones for removed attempts). *Replaced by [ADR-002](0002-hosting-auth-sync.md): a three-way merge against the last synced copy needs neither the adapter nor the record metadata.*
 
 ## Options Considered
 

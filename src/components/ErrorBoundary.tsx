@@ -1,9 +1,9 @@
 import { Component, useState, type ErrorInfo, type ReactNode } from 'react'
 import { DownloadIcon, RotateCwIcon, TriangleAlertIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { downloadFile } from '@/lib/browser'
-import { localDate } from '@/lib/date'
-import { STORAGE_KEY } from '@/lib/persistence'
+import { STORAGE_KEYS } from '@/lib/_consts/storage'
+import { downloadFile } from '@/lib/_utils/browser'
+import { localDate } from '@/lib/_utils/date'
 
 /**
  * Last line of defense: if rendering throws, show a way out instead of a blank page — without
@@ -34,7 +34,7 @@ function CrashScreen({ error }: { error: Error }) {
   }
   const reset = () => {
     try {
-      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(STORAGE_KEYS.tracker)
     } finally {
       location.reload()
     }
@@ -93,7 +93,7 @@ function CrashScreen({ error }: { error: Error }) {
 /** The raw saved JSON, exactly as stored — even if it no longer parses as valid data. */
 function readSaved(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY)
+    return localStorage.getItem(STORAGE_KEYS.tracker)
   } catch {
     return null
   }

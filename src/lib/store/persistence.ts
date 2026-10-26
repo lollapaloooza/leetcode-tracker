@@ -1,6 +1,11 @@
-// The saved-data contract: defaults, limits, and turning whatever comes out of storage or a backup
-// file into a valid TrackerData. Bad records are dropped one by one, so a single broken entry
-// can't take the whole app down.
+// The saved-data contract: turning whatever comes out of storage or a backup file into a valid
+// TrackerData. Bad records are dropped one by one, so a single broken entry can't take the whole
+// app down.
+import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
+import { CONFIDENCES, RESULTS, STATUSES } from '@/lib/_consts/enums'
+import { GOAL_LIMITS } from '@/lib/_consts/practice'
+import { localDate } from '@/lib/_utils/date'
+import { initialReview, isSolved } from '@/lib/domain'
 import type {
   Attempt,
   Complexity,
@@ -13,35 +18,9 @@ import type {
   TimerState,
   TrackerData,
 } from '@/types'
-import { localDate } from './date'
-import { initialReview } from './srs'
-import { isSolved, STATUSES } from './status'
 
-export const STORAGE_KEY = 'leetcode-tracker'
+/** Version of the saved shape. Bump it, and teach `normalize()` the old shape, whenever the shape changes. */
 export const STORAGE_VERSION = 3
-
-export const DEFAULTS: TrackerData = {
-  progress: {},
-  plans: {},
-  weekdayGoal: 1,
-  weekendGoal: 3,
-  weeklyDays: 4,
-  coreFirst: true,
-  attempts: [],
-  studies: [],
-  reviews: {},
-  notes: {},
-  complexity: {},
-  interview: null,
-  timer: null,
-  comebackAt: null,
-}
-
-export const GOAL_LIMITS: Record<GoalKind, [min: number, max: number]> = {
-  weekdayGoal: [1, 10],
-  weekendGoal: [1, 10],
-  weeklyDays: [1, 7],
-}
 
 type Guard<T> = (v: unknown) => v is T
 
@@ -57,8 +36,8 @@ const oneOf =
     values.includes(v as T)
 
 const isStatus = oneOf(STATUSES)
-const isResult = oneOf(['solved', 'helped', 'failed'] as const)
-const isConfidence = oneOf([1, 2, 3] as const)
+const isResult = oneOf(RESULTS)
+const isConfidence = oneOf(CONFIDENCES)
 
 const isProgress = (v: unknown): v is ProblemProgress =>
   isRecord(v) && isStatus(v.status) && isString(v.updatedAt) && !Number.isNaN(Date.parse(v.updatedAt))
@@ -102,7 +81,7 @@ function plansOf(v: unknown): Record<string, PlanItem[]> {
 
 function goal(v: unknown, kind: GoalKind): number {
   const [min, max] = GOAL_LIMITS[kind]
-  return isInt(v) ? Math.min(max, Math.max(min, v)) : DEFAULTS[kind]
+  return isInt(v) ? Math.min(max, Math.max(min, v)) : TRACKER_DEFAULTS[kind]
 }
 
 /**
@@ -118,7 +97,7 @@ export function normalize(raw: unknown): TrackerData {
     weekdayGoal: goal(r.weekdayGoal, 'weekdayGoal'),
     weekendGoal: goal(r.weekendGoal, 'weekendGoal'),
     weeklyDays: goal(r.weeklyDays, 'weeklyDays'),
-    coreFirst: isBool(r.coreFirst) ? r.coreFirst : DEFAULTS.coreFirst,
+    coreFirst: isBool(r.coreFirst) ? r.coreFirst : TRACKER_DEFAULTS.coreFirst,
     attempts: arrayOf(r.attempts, isAttempt),
     studies: arrayOf(r.studies, isStudy),
     // v1 had no reviews: start a schedule for everything already solved.

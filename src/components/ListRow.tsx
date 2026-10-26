@@ -1,9 +1,9 @@
 import { CheckIcon, PlusIcon, RotateCcwIcon } from 'lucide-react'
 import { Toggle } from '@/components/ui/toggle'
 import type { Problem } from '@/data/problems'
-import { formatShortDay } from '@/lib/date'
-import { isDue } from '@/lib/srs'
-import { useTracker } from '@/store'
+import { formatShortDay } from '@/lib/_utils/date'
+import { isDue } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 import { DifficultyTag } from './DifficultyTag'
 import { ProblemLinks, ProblemTitle, StatusMenu } from './problem-bits'
 

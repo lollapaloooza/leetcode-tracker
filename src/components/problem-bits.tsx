@@ -1,6 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
 import { CheckIcon, EllipsisIcon, ExternalLinkIcon, MonitorPlayIcon, PlayIcon, XIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,10 +11,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { leetcodeUrl, neetcodeUrl, videoUrl, type Problem } from '@/data/problems'
-import { RESULT_LABEL } from '@/lib/srs'
-import { STATUS_LABEL, STATUSES } from '@/lib/status'
+import { STATUSES } from '@/lib/_consts/enums'
+import { RESULT_LABEL, STATUS_LABEL } from '@/lib/_consts/labels'
+import { cn } from '@/lib/_utils/cn'
+import { useUI } from '@/lib/store'
 import type { Complexity, Result, Status } from '@/types'
-import { useUI } from '@/ui-store'
 
 
 const RESULT_TEXT: Record<Result, string> = {

@@ -1,7 +1,7 @@
 // What to practice next. Pure functions of the saved data and a date — no store, no clock.
 import { PROBLEMS, problemById, type Problem } from '@/data/problems'
+import { addDays, isWeekend } from '@/lib/_utils/date'
 import type { Attempt, PlanItem, Topic, TrackerData } from '@/types'
-import { addDays, isWeekend } from './date'
 import { isDue } from './srs'
 import { isSolved } from './status'
 

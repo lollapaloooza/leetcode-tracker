@@ -5,9 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { downloadFile } from '@/lib/browser'
-import { buildIcs, type CalendarBlock } from '@/lib/calendar'
-import { useUI } from '@/ui-store'
+import { downloadFile } from '@/lib/_utils/browser'
+import { buildIcs, type CalendarBlock } from '@/lib/_utils/ics'
+import { useUI } from '@/lib/store'
 
 /** Mon-first for display; values are JS weekdays (0 = Sunday). */
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]

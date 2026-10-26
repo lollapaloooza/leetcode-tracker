@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { STATUSES } from '@/lib/_consts/enums'
 import type { Result, Status } from '@/types'
-import { isSolved, STATUS_LABEL, statusAfter, STATUSES } from './status'
+import { isSolved, statusAfter } from './status'
 
 describe('isSolved', () => {
   it('counts solving with help as solved', () => {
@@ -23,11 +24,5 @@ describe('statusAfter', () => {
   ]
   it.each(cases)('%s + %s → %s', (current, result, expected) => {
     expect(statusAfter(current, result)).toBe(expected)
-  })
-})
-
-describe('STATUS_LABEL', () => {
-  it('labels every status', () => {
-    expect(Object.keys(STATUS_LABEL).sort()).toEqual([...STATUSES].sort())
   })
 })

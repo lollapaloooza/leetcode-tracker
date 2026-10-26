@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { problemById } from '@/data/problems'
+import { attempt, idOf } from '@/test/builders'
 import { activityByDay, computePace, currentWeek, lastActiveBefore, lastWeekSummary, weakTopics, weeklyStreak } from './insights'
-import { attempt, idOf } from './test-utils'
 
 describe('computePace', () => {
   const target = { date: '2026-11-24', setOn: '2026-10-25', solvedAtSet: 50 }

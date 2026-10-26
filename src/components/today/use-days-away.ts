@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { diffDays } from '@/lib/date'
-import { activityByDay, lastActiveBefore } from '@/lib/insights'
-import { useTracker } from '@/store'
+import { diffDays } from '@/lib/_utils/date'
+import { activityByDay, lastActiveBefore } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 
 /** Days without practice before "welcome back" replaces the usual nudges. */
 const AWAY_DAYS = 3

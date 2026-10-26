@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/_utils/cn'
 import type { PlanItem } from '@/types'
 
 /** Progress toward today's goal — problems past the goal count as a bonus, not as the bar to clear. */

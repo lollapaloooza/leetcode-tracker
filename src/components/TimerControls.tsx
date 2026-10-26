@@ -1,12 +1,12 @@
 import { PauseIcon, PlayIcon, SquareIcon, XIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { Problem } from '@/data/problems'
-import { formatDuration, useNow } from '@/lib/date'
-import { TARGET_MINUTES } from '@/lib/srs'
-import { timerElapsed } from '@/lib/timer'
-import { useTracker } from '@/store'
-import { useUI } from '@/ui-store'
+import { TARGET_MINUTES } from '@/lib/_consts/practice'
+import { useNow } from '@/lib/_hooks/use-now'
+import { cn } from '@/lib/_utils/cn'
+import { formatDuration } from '@/lib/_utils/date'
+import { timerElapsed } from '@/lib/domain'
+import { useTracker, useUI } from '@/lib/store'
 
 /**
  * Start button, or the live clock for the problem being timed. One timer at a time.

@@ -1,7 +1,7 @@
 // Builders for unit tests: real problems by title, and attempts/data with sensible defaults.
 import { PROBLEMS } from '@/data/problems'
+import { TRACKER_DEFAULTS } from '@/lib/_consts/defaults'
 import type { Attempt, ProblemProgress, Status, TrackerData } from '@/types'
-import { DEFAULTS } from './persistence'
 
 export function idOf(title: string): number {
   const problem = PROBLEMS.find((p) => p.title === title)
@@ -33,5 +33,5 @@ export function progressOf(status: Status, ...titles: string[]): Record<number, 
 }
 
 export function tracker(overrides: Partial<TrackerData> = {}): TrackerData {
-  return { ...DEFAULTS, ...overrides }
+  return { ...TRACKER_DEFAULTS, ...overrides }
 }

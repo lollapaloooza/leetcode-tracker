@@ -1,9 +1,10 @@
 import { DifficultyDot } from '@/components/DifficultyTag'
 import { Progress } from '@/components/ui/progress'
-import { computePace } from '@/lib/insights'
-import { useTracker } from '@/store'
+import { DIFFICULTIES } from '@/lib/_consts/enums'
+import { computePace } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 import { Section } from './Section'
-import { DIFFICULTIES, useSolvedStats } from './use-solved-stats'
+import { useSolvedStats } from './use-solved-stats'
 
 export function ProgressSection({ today }: { today: string }) {
   const stats = useSolvedStats()

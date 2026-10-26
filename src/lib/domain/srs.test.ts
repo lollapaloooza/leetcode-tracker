@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { REVIEW_INTERVALS } from '@/lib/_consts/practice'
 import type { ReviewState } from '@/types'
-import { initialReview, isDue, nextReview, REVIEW_INTERVALS, spreadOverdue, spreadSchedule } from './srs'
+import { initialReview, isDue, nextReview, spreadOverdue, spreadSchedule } from './srs'
 
 const today = '2026-10-25'
 

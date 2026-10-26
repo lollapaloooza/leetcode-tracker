@@ -1,12 +1,14 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { XIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { problemById } from '@/data/problems'
-import { addDays, formatDay, parseDate } from '@/lib/date'
-import { activityByDay, lastWeekSummary } from '@/lib/insights'
-import { CONFIDENCE_LABEL, TARGET_MINUTES } from '@/lib/srs'
-import { useTracker } from '@/store'
+import { CONFIDENCE_LABEL } from '@/lib/_consts/labels'
+import { TARGET_MINUTES } from '@/lib/_consts/practice'
+import { useElementWidth } from '@/lib/_hooks/use-element-width'
+import { cn } from '@/lib/_utils/cn'
+import { addDays, formatDay, parseDate } from '@/lib/_utils/date'
+import { activityByDay, lastWeekSummary } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 import type { Attempt, Study } from '@/types'
 import { DifficultyDot } from './DifficultyTag'
 import { EmptyState } from './EmptyState'
@@ -307,18 +309,4 @@ function HistoryRow({ entry }: { entry: Entry }) {
       </span>
     </li>
   )
-}
-
-function useElementWidth(ref: RefObject<HTMLElement | null>): number {
-  const [width, setWidth] = useState(0)
-  // Layout effect: measure before first paint so the grid doesn't flash at its minimum size.
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    setWidth(el.getBoundingClientRect().width)
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [ref])
-  return width
 }

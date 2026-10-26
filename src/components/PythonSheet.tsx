@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PYTHON_CHEATSHEET, type Snippet } from '@/data/python-cheatsheet'
-import { useUI } from '@/ui-store'
+import { useUI } from '@/lib/store'
 import { PythonIcon } from './PythonIcon'
 
 export function PythonSheet() {

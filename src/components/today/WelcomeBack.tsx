@@ -2,10 +2,8 @@ import type { ReactNode } from 'react'
 import { CheckIcon, XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PROBLEMS, problemById } from '@/data/problems'
-import { computePace } from '@/lib/insights'
-import { dueReviews, restartPick, solvedCount } from '@/lib/planning'
-import { spreadSchedule } from '@/lib/srs'
-import { useTracker } from '@/store'
+import { computePace, dueReviews, restartPick, solvedCount, spreadSchedule } from '@/lib/domain'
+import { useTracker } from '@/lib/store'
 
 /**
  * After a few days off, the usual signals (overdue pile, "behind pace", broken streak) feel like a
