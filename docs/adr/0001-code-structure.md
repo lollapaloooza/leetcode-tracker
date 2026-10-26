@@ -1,6 +1,6 @@
 # ADR-001: Keep the layered structure, tighten its boundaries before adding cloud sync
 
-**Status:** Accepted — implemented 2026-10-25 except item 8
+**Status:** Accepted — implemented 2026-10-25. Item 8 is replaced by [ADR-002](0002-hosting-auth-sync.md), and the `src/lib` layout is refined by [ADR-003](0003-lib-layout.md); the paths below are as they were then.
 **Date:** 2026-10-25
 **Deciders:** Project owner
 
