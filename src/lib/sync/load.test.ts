@@ -39,12 +39,39 @@ describe('loading the sync chunk', () => {
     expect(sync.startSync).toHaveBeenCalledOnce()
   })
 
-  it('never loads Firebase for someone who hasn’t signed in', async () => {
+  it('also starts sign-in for a device that forgot it was signed in, so the session comes back by itself', async () => {
     vi.useFakeTimers()
-    const { resumeSync } = await fresh()
+    const { resumeSync, useAccount } = await fresh()
+    resumeSync()
+    expect(sync.startSync).not.toHaveBeenCalled()
+    await vi.runAllTimersAsync()
+    expect(sync.startSync).toHaveBeenCalledOnce()
+    expect(useAccount.getState().status).toBe('signed-out')
+  })
+
+  it('stays quiet when the chunk can’t load for a visit that wasn’t signed in', async () => {
+    vi.useFakeTimers()
+    vi.doMock('./index', () => {
+      throw new Error('offline')
+    })
+    const { resumeSync, useAccount } = await fresh()
     resumeSync()
     await vi.runAllTimersAsync()
-    expect(sync.startSync).not.toHaveBeenCalled()
+    expect(useAccount.getState()).toMatchObject({ status: 'signed-out', error: null })
+    vi.doMock('./index', () => sync)
+  })
+
+  it('says so when it can’t restore an earlier sign-in', async () => {
+    vi.useFakeTimers()
+    vi.doMock('./index', () => {
+      throw new Error('offline')
+    })
+    const { resumeSync, useAccount } = await fresh()
+    useAccount.setState({ status: 'checking' })
+    resumeSync()
+    await vi.runAllTimersAsync()
+    expect(useAccount.getState()).toMatchObject({ status: 'signed-out', error: 'Cannot load sign-in. Try again.' })
+    vi.doMock('./index', () => sync)
   })
 
   it('says so when the chunk can’t be downloaded, and tries again next time', async () => {

@@ -41,7 +41,7 @@ Two rules come with this table. `npm run lint` enforces both ([ADR-003](docs/adr
 
 - **`_` folders have no index:** import the file. **Modules** (`domain`, `store`, `theme`) are imported as a folder, never by reaching into their files.
 - **Imports go one way:** `domain` stays pure (no React, no store), and `_utils` imports nothing from the app.
-- **Firebase stays lazy:** only `src/lib/sync/` imports `firebase`, and the rest of the app reaches it through `@/lib/sync/load`, so people who never sign in never download it.
+- **Firebase stays lazy:** only `src/lib/sync/` imports `firebase`, and the rest of the app reaches it through `@/lib/sync/load`, so it never weighs on the first screen. The database code (`cloud.ts`) loads only for signed-in people.
 
 If lint rejects an import, the code is usually in the wrong layer: move it, don't silence the rule.
 

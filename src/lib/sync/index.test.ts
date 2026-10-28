@@ -40,7 +40,8 @@ describe('sync wiring', () => {
     const { startSync, signOut } = await import('./index')
     startSync()
     auth.report(ada)
-    expect(engines.map((e) => e.uid)).toEqual(['u1'])
+    // The database code loads only now, for the signed-in account.
+    await vi.waitFor(() => expect(engines.map((e) => e.uid)).toEqual(['u1']))
     expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.sync)!)).toMatchObject({ uid: 'u1' })
 
     await signOut()
@@ -52,6 +53,7 @@ describe('sync wiring', () => {
     const { startSync, answerChoice } = await import('./index')
     startSync()
     auth.report(ada)
+    await vi.waitFor(() => expect(engines).toHaveLength(1))
     const sides = { cloud: TRACKER_DEFAULTS, device: TRACKER_DEFAULTS }
     const answer = engines.at(-1)!.hooks.ask(sides)
     expect(useAccount.getState().choice).toBe(sides)
@@ -65,6 +67,7 @@ describe('sync wiring', () => {
     const { startSync } = await import('./index')
     startSync()
     auth.report(ada)
+    await vi.waitFor(() => expect(engines).toHaveLength(1))
     engines.at(-1)!.hooks.newVersion()
     expect(useUI.getState().toast).toMatchObject({ text: 'A new version is available. Reload the page.', action: { label: 'Reload' } })
   })

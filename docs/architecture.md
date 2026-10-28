@@ -168,7 +168,9 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 - **What's split out:** anything not needed for the first screen goes into its own chunk through `lazyComponent()` ([`_utils/lazy.ts`](../src/lib/_utils/lazy.ts)): History, Patterns, ⌘K, the problem drawer, the Python sheet, the Settings sheet, the short-on-time and calendar dialogs, the Start drawer, and the date picker (72 kB on its own).
 - **When it loads:** each chunk registers a preloader, and `App` runs them all once the browser is idle. In practice, nothing waits on the network when you open it. A failed load is retried the next time.
 - **How dialogs mount:** `MountWhenOpened` ([`shell/Overlays.tsx`](../src/components/shell/Overlays.tsx)) mounts a lazy dialog the first time it opens, and keeps it mounted so the close animation still plays.
-- **Firebase:** the `sync` chunk (Firebase Auth and Firestore Lite, about 65 kB gzipped) is not among the idle preloads. It loads when the sign-in card opens, so its Google button can open Google's popup straight from the click, or at startup for someone who signed in before. Lint stops any other import of `firebase` or `@/lib/sync`.
+- **Firebase**, in two chunks that are never part of the first screen. Lint stops any other import of `firebase` or `@/lib/sync`.
+  - **`sync`** (Firebase Auth, about 31 kB gzipped) loads and starts once the page is idle, on every visit (`resumeSync()`). A session Firebase still has comes back by itself, even after the site's storage was cleared, and the Google button opens Google's popup straight from the click.
+  - **`cloud`** (Firestore Lite and the sync engine, about 35 kB gzipped) loads only when someone is signed in.
 - **Shortcuts:** they live outside the lazy part. The ⌘K listener (`usePaletteShortcut`) is registered by `Overlays`, so it works before the palette's code has arrived.
 
 ## Hosting and sign-in

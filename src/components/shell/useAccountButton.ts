@@ -3,7 +3,7 @@ import { exportBackup } from '@/components/settings/useBackup'
 import { PHONE_SCREEN } from '@/lib/_consts/layout'
 import { useMediaQuery } from '@/lib/_hooks/useMediaQuery'
 import { useAccount, useUI } from '@/lib/store'
-import { loadSync, withSync } from '@/lib/sync/load'
+import { withSync } from '@/lib/sync/load'
 
 /** The account button: a card to sign in, or the account menu. A popover, or a bottom sheet on phones. */
 export function useAccountButton() {
@@ -16,8 +16,9 @@ export function useAccountButton() {
   const uid = account?.uid ?? null
 
   const setOpen = (open: boolean) => {
-    // Fetch the sign-in code now, so "Sign in with Google" opens Google's window at once.
-    if (open && !account) loadSync().catch(() => {})
+    // Start sign-in now, for two reasons: "Sign in with Google" then opens Google's window at once,
+    // and a session Firebase still has (say, after the site's storage was cleared) shows up by itself.
+    if (open && !account) withSync((sync) => sync.startSync())
     if (!open) useAccount.setState({ error: null })
     setOpenFor(open ? uid : undefined)
   }

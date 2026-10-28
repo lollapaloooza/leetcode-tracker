@@ -23,8 +23,8 @@ interface AccountState {
 }
 
 /**
- * Who's signed in. Firebase itself loads in its own chunk (`@/lib/sync`), and only for people who
- * sign in: this store and the saved uid are all the first download knows about accounts.
+ * Who's signed in. Firebase itself loads in its own chunks (`@/lib/sync`), after the first screen:
+ * this store and the saved uid are all the first download knows about accounts.
  */
 export const useAccount = create<AccountState>()(() => ({
   status: savedUid() ? 'checking' : 'signed-out',

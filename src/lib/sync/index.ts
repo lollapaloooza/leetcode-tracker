@@ -3,11 +3,12 @@
 import { useAccount, useUI } from '@/lib/store'
 import { signInWith, signOutWith, watchAccount } from './account'
 import { firebaseAuth } from './auth'
-import { startEngine, type Choice, type SyncEngine, type SyncHooks } from './engine'
-import { firestoreRemote } from './remote'
+import type { Choice, SyncEngine, SyncHooks } from './engine'
 
 let watching = false
 let engine: SyncEngine | null = null
+/** The account sync is for, while its code loads too */
+let syncing: string | null = null
 let answer: ((choice: Choice | null) => void) | null = null
 
 const hooks: SyncHooks = {
@@ -22,11 +23,25 @@ const hooks: SyncHooks = {
 
 /** Sync runs for whoever is signed in, and stops on sign-out. */
 function follow(uid: string | null) {
-  if (engine?.uid === uid) return
+  if (syncing === uid) return
   engine?.stop()
   engine = null
+  syncing = uid
   answerChoice(null)
-  if (uid) engine = startEngine(uid, firestoreRemote, hooks)
+  if (uid) startCloud(uid)
+}
+
+/** The database code loads only now, for a signed-in account. Offline, it tries again once back online. */
+function startCloud(uid: string) {
+  import('./cloud').then(
+    ({ startCloudSync }) => {
+      if (syncing === uid && !engine) engine = startCloudSync(uid, hooks)
+    },
+    (error: unknown) => {
+      console.error('Sync failed to load', error)
+      window.addEventListener('online', () => syncing === uid && !engine && startCloud(uid), { once: true })
+    },
+  )
 }
 
 /** Restores an earlier sign-in, then follows every sign-in and sign-out. */

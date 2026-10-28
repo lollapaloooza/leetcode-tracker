@@ -20,7 +20,7 @@ function onPhone() {
 describe('AccountButton', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('opens a short card to sign in with Google, and fetches the sign-in code on the way', async () => {
+  it('opens a short card to sign in with Google, and starts sign-in on the way', async () => {
     const user = userEvent.setup()
     const sync = await loadSync()
     vi.clearAllMocks()
@@ -28,7 +28,8 @@ describe('AccountButton', () => {
 
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(screen.getByRole('dialog', { name: 'Save your progress' })).toHaveAttribute('data-slot', 'popover-content')
-    expect(loadSync).toHaveBeenCalledOnce()
+    // So a session Firebase still has shows up before anyone presses the Google button.
+    expect(sync.startSync).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Sign in with Google' }))
     expect(sync.signIn).toHaveBeenCalledOnce()

@@ -34,6 +34,8 @@ const toAccount = (user: User): Account => ({ uid: user.uid, name: user.displayN
 export const firebaseAuth: AuthClient = {
   onUserChanged: (callback) => onAuthStateChanged(auth, (user) => callback(user && toAccount(user))),
   signIn: async () => {
+    // Already signed in (Firebase restored the session): no need to ask Google again.
+    if (auth.currentUser) return
     await signInWithPopup(auth, google)
   },
   signOut: () => signOut(auth),

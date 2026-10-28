@@ -68,7 +68,10 @@ B fits the owner's mental model, and with the simpler first sign-in it needs no 
 
 - **Code:** `lib/sync/` gains `items.ts`, `meta.ts`, `engine.ts` (against a `RemoteStore` interface) and `remote.ts` (Firestore Lite). The engine is tested with an in-memory cloud. `account-store` holds the first-sign-in question (`choice`), and the shell shows it in `SyncChoiceDialog`.
 - **Rules:** [`firestore.rules`](../../firestore.rules) allows each user only their own items, with the three fields; `updatedAt` must be the server time, and deletes are refused. `data` is exempt from indexing.
-- **Size:** the sync chunk is 64.5 kB gzipped (Auth + Firestore Lite), loaded only for people who sign in. The first load grew about 5 kB gzipped for the header's account button.
+- **Size:** two chunks, neither in the first load.
+  - **Auth** (31 kB gzipped) loads once the page is idle on every visit, so a saved session comes back by itself.
+  - **Firestore Lite and the engine** (35 kB gzipped) load only for people who are signed in.
+  - The first load itself grew about 5 kB gzipped, for the header's account button.
 - **Cost:** a log writes about 3 documents, against 20,000 free writes a day. Each device reads everything once, at its first sign-in, then only changes.
 - **Changing the saved data:** a new field in `TrackerData` must be given an item in `items.ts`, or kept local like the timer. See CONTRIBUTING.
 - **Known limits:**

@@ -88,7 +88,7 @@ When it asks about Gemini or usage data, either answer is fine. Never paste the 
 2. **Sign-in.** *Done.*
    - `firestore.rules`: each user can read and write only their own document.
    - The Firebase config in `.env`.
-   - `firebase/auth` in a lazy chunk, so signed-out visitors download none of it.
+   - `firebase/auth` in a lazy chunk that loads after the first screen; the database code loads only for signed-in people.
    - The account button in the header, with unit tests against a fake sign-in provider.
    - **Emulator tests come later**, with the integration tests. `npm run emulators` needs Java 21 or newer.
 3. **Sync** ([ADR-006](adr/0006-sync-per-item.md)). *Done.* One document per item under `users/{uid}/items`. The new rules go live with the next `npm run deploy`; until then, uploads are refused and retried.

@@ -6,7 +6,7 @@ type SyncModule = typeof import('./index')
 let loaded: SyncModule | undefined
 let pending: Promise<SyncModule> | undefined
 
-/** The account and sync code, with Firebase, in its own chunk: only people who sign in download it. */
+/** The sign-in code, with Firebase Auth, in its own chunk: never part of the first screen. */
 export function loadSync(): Promise<SyncModule> {
   return (pending ??= import('./index').then(
     (sync) => (loaded = sync),
@@ -34,7 +34,18 @@ export function withSync(run: (sync: SyncModule) => unknown) {
   )
 }
 
-/** Signed in on an earlier visit: restore the session once the page is idle. */
+/**
+ * Once the page is idle, start sign-in on every visit, so a session Firebase still has comes back by
+ * itself, even when this device forgot it was signed in (cleared storage, the crash-screen reset).
+ * Offline, a visit that was signed in before says so; otherwise it stays quiet until Sign in.
+ */
 export function resumeSync() {
-  if (useAccount.getState().status === 'checking') whenIdle(() => withSync((sync) => sync.startSync()))
+  whenIdle(() =>
+    loadSync().then(
+      (sync) => sync.startSync(),
+      () => {
+        if (useAccount.getState().status === 'checking') useAccount.setState({ status: 'signed-out', error: 'Cannot load sign-in. Try again.' })
+      },
+    ),
+  )
 }

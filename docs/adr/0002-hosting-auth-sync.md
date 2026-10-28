@@ -275,7 +275,8 @@ Each record in local and remote is compared with the base:
 ### 3.6 Sign-in and first link
 
 - **Sign-in:** Firebase Auth's Google provider, using `signInWithPopup` from the button click. The session lives in IndexedDB, and tokens refresh by themselves.
-  - **Keeping the popup unblocked:** the sync chunk loads when the sign-in card opens. The click on its Google button then calls `signInWithPopup` without waiting on the network.
+  - **Keeping the popup unblocked:** the sync chunk loads and starts when the sign-in card opens. The click on its Google button then calls `signInWithPopup` without waiting on the network.
+  - **A session Firebase still has** (its IndexedDB survives a cleared localStorage) is found while the card is open: the card closes and the avatar shows. `signIn` never opens the popup while someone is signed in.
   - **If it's blocked anyway,** the card asks you to allow pop-ups. *Changed at build time:* there's no redirect fallback, which would only matter for a home-screen app, where popups don't work.
 - **`authDomain`:** the project's default `<project>.firebaseapp.com`. Popup sign-in works with it in browsers that partition third-party storage. Firebase's same-domain advice (`<project>.web.app`, plus `https://<that domain>/__/auth/handler` as a redirect URI) applies to redirect sign-in, so it comes with the redirect fallback, if ever.
 - **Where it shows up** (*changed 2026-10-28*, design: the "Sign-in" boards on the layout canvas): the last button in the header.
@@ -305,7 +306,7 @@ Measured with `firebase@13.0.0` + Vite 8, minified and gzipped:
 | `firebase/firestore`, the full SDK with offline cache (for comparison) | 173 KB |
 | The app's whole first load today | 174 KB |
 
-- **Who downloads it:** the sync chunk loads through the existing idle preloader, and only when `leetcode-tracker-sync` holds a uid (signed in before) or when the user presses Sign in. Signed-out visitors download none of it.
+- **Who downloads it** (*changed 2026-10-28*): the Auth chunk (31 kB) loads once the page is idle on every visit, so a session Firebase still has comes back without a click, even when localStorage was cleared. Firestore Lite (35 kB) is a separate chunk, loaded only for signed-in people.
 - **Lite rather than the full SDK:** the full SDK's offline cache and live listeners duplicate what localStorage and zustand already do, at about three times the size. Lite has everything the protocol needs: `getDoc`, `setDoc`, `runTransaction` and `writeBatch`. The price is no live updates; other devices catch up when the tab gets focus.
 
 ### 3.8 Hosting
