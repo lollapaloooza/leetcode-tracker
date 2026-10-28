@@ -1,5 +1,5 @@
 // Runs before every component test (*.test.tsx): Testing Library's matchers, a fresh DOM, storage
-// and stores for each test, and the few browser APIs jsdom leaves out.
+// and stores for each test, the few browser APIs jsdom leaves out, and a stand-in for Firebase.
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -25,6 +25,13 @@ globalThis.ResizeObserver = class {
 Element.prototype.scrollIntoView = vi.fn()
 Element.prototype.hasPointerCapture = vi.fn(() => false)
 Element.prototype.releasePointerCapture = vi.fn()
+
+// Components never reach Firebase: the sync chunk is a fake that records its calls. Its own logic is
+// tested in lib/sync with a fake sign-in provider.
+vi.mock('@/lib/sync/load', () => {
+  const sync = { startSync: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }
+  return { loadSync: vi.fn(async () => sync), withSync: vi.fn((run: (s: typeof sync) => unknown) => run(sync)), resumeSync: vi.fn() }
+})
 
 beforeEach(() => {
   localStorage.clear()

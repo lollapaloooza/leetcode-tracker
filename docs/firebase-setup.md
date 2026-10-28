@@ -4,6 +4,12 @@ What you do in the Firebase console, once, before the hosting and sign-in work i
 
 **Time:** about 20 minutes. **Cost:** $0. Everything stays on the free Spark plan, and no billing account is needed.
 
+**Status (2026-10-27):**
+- **Received:** the web config, for project `leetcode-tracker-lollapalooza`. It's in `.env`.
+- **Decisions:** the other two decisions use the recommendations below until the owner says otherwise.
+- **Built in the repo:** hosting, the rules and sign-in (section 5, steps 1–2).
+- **Still the owner's:** log the CLI in (section 3), then run the first deploy (section 5).
+
 ## 1. Decide three things first
 
 | Question | Recommended | Why it matters |
@@ -73,18 +79,19 @@ When it asks about Gemini or usage data, either answer is fine. Never paste the 
 - your answers to the three questions in section 1, or "use the recommendations";
 - confirmation that `npx firebase-tools@15.33.0 projects:list` shows your project.
 
-## 5. What I'll do next (in the repo)
+## 5. In the repo
 
-1. **Hosting** (ADR-002 Phase 1):
-   - add `firebase.json` with the cache headers, `.firebaserc`, and `npm run deploy`;
-   - add `firebase-tools` as a pinned dev dependency.
-   - You then run the first deploy, or tell me to.
-2. **Sign-in:**
-   - `firestore.rules` (each user can read and write only their own document);
-   - the Firebase config in `.env`;
-   - a lazily loaded `firebase/auth`, so signed-out visitors download none of it;
-   - the "Sign in with Google" button in Settings › Backup, and tests against the local emulators.
-3. **Sync** comes after that, starting with ADR-002 Phase 0: tabs sharing one copy, and `merge3()` with tests.
+1. **Hosting** (ADR-002 Phase 1). *Done.*
+   - `firebase.json` with the cache headers, `.firebaserc`, and `npm run deploy`;
+   - `firebase-tools@15.33.0`, pinned, as a dev dependency.
+   - **The first deploy is yours:** `npm run deploy` checks, builds, and publishes the site with the Firestore rules. It needs step 4's database to exist, since it deploys the rules too.
+2. **Sign-in.** *Done.*
+   - `firestore.rules`: each user can read and write only their own document.
+   - The Firebase config in `.env`.
+   - `firebase/auth` in a lazy chunk, so signed-out visitors download none of it.
+   - The account row in Settings › Your data, with unit tests against a fake sign-in provider.
+   - **Emulator tests come later**, with the integration tests. `npm run emulators` needs Java 21 or newer.
+3. **Sync** comes next, starting with ADR-002 Phase 0: tabs sharing one copy, and `merge3()` with tests.
 
 ## 6. After the first deploy
 
@@ -97,11 +104,10 @@ These need the live URL, so they come once the app is up.
      - `https://<project-id>.firebaseapp.com/*`
      - `http://localhost:5173/*`
   3. Leave **API restrictions** as they are; narrowing them can break sign-in.
-- **Sign-in on Safari and iPhone:** the app sets `authDomain` to `<project-id>.web.app`.
+- **Not needed for now: the redirect URI.** Sign-in uses a popup, which works with the default `<project-id>.firebaseapp.com` auth domain in every browser. Only redirect sign-in is affected by browsers that block third-party storage, and it would only come with a home-screen app. If that happens:
   1. In Google Cloud console, open **APIs & Services** › **Credentials** › the **Web client (auto created by Google Service)**.
   2. Add `https://<project-id>.web.app/__/auth/handler` under **Authorized redirect URIs**.
-
-  This is Firebase's fix for browsers that block third-party storage.
+  3. Set `authDomain` to `<project-id>.web.app`.
 
 ## Free-plan limits (Spark)
 

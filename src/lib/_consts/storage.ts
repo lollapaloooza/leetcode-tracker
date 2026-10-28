@@ -6,4 +6,6 @@ export const STORAGE_KEYS = {
   tracker: 'leetcode-tracker',
   theme: 'leetcode-tracker-theme',
   prefs: 'leetcode-tracker-prefs',
+  /** The signed-in uid; sync will keep its last agreed copy here too (ADR-002) */
+  sync: 'leetcode-tracker-sync',
 } as const

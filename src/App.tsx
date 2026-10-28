@@ -14,6 +14,7 @@ import { useMediaQuery } from '@/lib/_hooks/useMediaQuery'
 import { useToday } from '@/lib/_hooks/useToday'
 import { lazyComponent, preloadLazyComponents } from '@/lib/_utils/lazy'
 import { useUI, type Tab } from '@/lib/store'
+import { resumeSync } from '@/lib/sync/load'
 
 // Not needed for the first screen: loads in its own chunk, in the background after startup.
 const PatternsView = lazyComponent(() => import('@/components/PatternsView').then((m) => m.PatternsView))
@@ -25,6 +26,7 @@ export default function App() {
   const wide = useMediaQuery(WIDE_SCREEN)
 
   useEffect(preloadLazyComponents, [])
+  useEffect(resumeSync, [])
 
   return (
     // The tabs span the page: their list is in the header, their panels in the main column.

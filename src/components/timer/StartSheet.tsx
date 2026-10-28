@@ -7,7 +7,7 @@ import type { Problem } from '@/data/problems'
 import { SITE_NAME, type Site } from '@/lib/domain'
 import { useStartSheet } from './useStartSheet'
 
-/** "Open it on LeetCode or NeetCode?" — optional: closing the drawer starts only the timer. */
+/** "Open it on LeetCode or NeetCode, or just time it?" Closing the drawer changes its mind: nothing starts. */
 export function StartSheet({ today }: { today: string }) {
   const sheet = useStartSheet(today)
   const rememberId = useId()
@@ -15,25 +15,26 @@ export function StartSheet({ today }: { today: string }) {
   const { problem } = sheet
 
   return (
-    <Sheet open={sheet.open} onOpenChange={(open) => !open && sheet.justStart()}>
+    <Sheet open={sheet.open} onOpenChange={(open) => !open && sheet.cancel()}>
       <SheetContent
         side="bottom"
         showCloseButton={false}
         className="mx-auto w-full max-w-lg gap-5 rounded-t-2xl border-x px-5 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+        {...sheet.focus}
       >
         <span aria-hidden className="mx-auto h-1 w-9 rounded-full bg-border" />
         <SheetHeader className="flex-row items-start gap-3 p-0">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <SheetTitle className="text-lg leading-tight">Start {problem.title}</SheetTitle>
-            <SheetDescription>The timer starts either way. Open the problem too?</SheetDescription>
+            <SheetDescription>Open the problem to solve it, or just start the timer.</SheetDescription>
           </div>
           <Button
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground max-sm:size-9"
-            aria-label="Close and start only the timer"
-            title="Start without opening a tab"
-            onClick={sheet.justStart}
+            aria-label="Close without starting"
+            title="Close — nothing starts"
+            onClick={sheet.cancel}
           >
             <XIcon />
           </Button>

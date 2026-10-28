@@ -44,7 +44,8 @@ That was too much to scan for a daily list. The owner also wanted three more thi
    - The rule is session state (`useUI.focusClearedOn`), for that day only. A reload or a new day shows the next problem as usual.
    - Finishing a problem (Done → log) still moves on to the next.
 5. **Start opens an optional drawer** that asks: LeetCode, NeetCode, or **Just start the timer**.
-   - Closing the drawer any way starts only the timer, without a tab. That covers ✕, Escape and the backdrop.
+   - Closing the drawer any way starts nothing: ✕, Escape and a click outside all mean "not now", and focus goes back to the Start button.
+   - *Changed 2026-10-27:* closing used to start only the timer, so a stray click outside started a problem by accident.
    - **Remember my choice** saves the answer on this device in a new preference store, `usePrefs`, under its own key `leetcode-tracker-prefs`. Like the theme, it's never in backups or sync, since a phone and a laptop may want different answers.
    - With a remembered answer, Start acts immediately and shows a toast with **Ask next time**. Settings › Start changes it too.
    - Every timer start goes through `beginTimer()`, which also refills an emptied Now card. That includes ⌘K and "Short on time?".

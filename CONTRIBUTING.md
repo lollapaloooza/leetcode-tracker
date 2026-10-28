@@ -31,6 +31,7 @@ Find the first row that fits.
 | Something that changes saved state | an action in `src/lib/store/tracker-store.ts` | `@/lib/store` |
 | UI state that isn't saved (open dialogs, the current tab) | `src/lib/store/ui-store.ts` | `@/lib/store` |
 | A preference for this device only, not backed up (like what Start opens) | `src/lib/store/prefs-store.ts` | `@/lib/store` |
+| Anything that talks to Firebase (sign-in now, sync next) | `src/lib/sync/<name>.ts`, behind an interface its tests can fake (like `AuthClient`) | from components only: `withSync()` / `loadSync()` in `@/lib/sync/load` |
 | A React hook that knows nothing about the tracker | `src/lib/_hooks/useName.ts` | `@/lib/_hooks/useNow` |
 | A hook, constant or helper that only one feature uses | next to that feature, e.g. `src/components/today/` | relative import |
 | A view, dialog or sidebar section | `src/components/`, in its feature folder (`shell/`, `today/`, `sidebar/`, `settings/`, `command-palette/`) | `@/components/…` |
@@ -40,6 +41,7 @@ Two rules come with this table. `npm run lint` enforces both ([ADR-003](docs/adr
 
 - **`_` folders have no index:** import the file. **Modules** (`domain`, `store`, `theme`) are imported as a folder, never by reaching into their files.
 - **Imports go one way:** `domain` stays pure (no React, no store), and `_utils` imports nothing from the app.
+- **Firebase stays lazy:** only `src/lib/sync/` imports `firebase`, and the rest of the app reaches it through `@/lib/sync/load`, so people who never sign in never download it.
 
 If lint rejects an import, the code is usually in the wrong layer: move it, don't silence the rule.
 
@@ -146,7 +148,7 @@ The dialog now lives in its own chunk, and it's preloaded once the page is idle.
 npx shadcn add <component>
 ```
 
-It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 556 kB (176 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
+It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 557 kB (177 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
 
 ### Refresh the problem list
 
@@ -158,6 +160,25 @@ git diff src/data/problems.ts
 - **Where the data comes from:** the script reads NeetCode's site bundle and GitHub data.
 - **Safety check:** it refuses to write if the data doesn't look right (250 problems, 150 core, unique LeetCode numbers).
 - **Reviewing the diff:** progress is keyed by LeetCode number, so renamed or re-slugged problems are harmless. A problem *dropped* from the list disappears from the UI.
+
+### Deploy
+
+The owner deploys. It needs the Firebase CLI logged in once (`npx firebase login`).
+
+```bash
+npm run deploy                                                    # check, build, then Hosting + Firestore rules
+curl -sI https://leetcode-tracker-lollapalooza.web.app/ | grep -i cache-control   # expect no-cache
+```
+
+A hashed file under `/assets/` should answer `public, max-age=31536000, immutable`. To try a build without touching the live site, `npx firebase hosting:channel:deploy preview` gives a temporary URL. Its domain must be added under Authentication › Settings › Authorized domains before Sign in works there.
+
+### Try sign-in without the real project
+
+```bash
+npm run emulators      # Auth + Firestore emulators, UI at http://127.0.0.1:4000 (needs Java 21+)
+```
+
+Then put `VITE_USE_EMULATORS=true` in `.env.local` and run `npm run dev`. Sign in creates a fake account in the emulator, which you can delete from its UI.
 
 ### Add a folder to `src/lib`
 

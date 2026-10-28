@@ -4,7 +4,7 @@ How the app works today. Why it's built this way is recorded in the ADRs ([001](
 
 ## Overview
 
-A local-first single-page app with no backend. Everything runs in the browser, and the saved data is one JSON document in localStorage.
+A local-first single-page app. Everything runs in the browser, and the saved data is one JSON document in localStorage. Signing in with Google is optional, and its code (Firebase) downloads only for people who use it. Syncing the data through Firestore is the next step ([ADR-002](adr/0002-hosting-auth-sync.md)). Firebase Hosting serves the built files.
 
 ```
 index.html  critical CSS + theme script (paint the right background before any JS loads)
@@ -17,8 +17,9 @@ main.tsx ─▶ ErrorBoundary ─▶ App
                                └─ Overlays: log dialog, ⌘K*, problem drawer*, Python*, Settings*, dialogs*
 
 components ──read/write──▶ lib/store ──rules──▶ lib/domain ──▶ lib/_consts, lib/_utils
-                               │
-                               └─ persist ──▶ localStorage["leetcode-tracker"]  (version 3)
+    │                          │
+    │                          └─ persist ──▶ localStorage["leetcode-tracker"]  (version 3)
+    └─ lib/sync/load ──lazy──▶ lib/sync* (Firebase Auth) ──▶ useAccount, localStorage["leetcode-tracker-sync"]
 ```
 
 ## Layers
@@ -35,7 +36,8 @@ types → _consts → _utils → domain → store → _hooks / theme → compone
 | `lib/_consts` | Storage keys, enum lists, labels, practice numbers, defaults | Import anything but types |
 | `lib/_utils` | Date math, file download, .ics, code splitting, `cn` | Import anything from the app |
 | `lib/domain` | The practice rules: planning, SRS, insights, status, timer | Use React, the store or the clock |
-| `lib/store` | `useTracker` (saved), `useUI` (session), `normalize()` | Use React or components |
+| `lib/store` | `useTracker` (saved), `useUI` (session), `usePrefs` (this device), `useAccount` (who's signed in), `normalize()` | Use React or components |
+| `lib/sync` | Firebase: Google sign-in now, cloud sync next. A lazy chunk; the rest of the app reaches it only through `load.ts` (`loadSync()`, `withSync()`, `resumeSync()`) | Be imported anywhere else, or use React |
 | `lib/_hooks`, `lib/theme` | Hooks with no feature knowledge; light/dark | Import components |
 | `components/` | Views and dialogs by feature: `shell/` (header, tabs, phone dock, overlays), `today/`, `sidebar/`, `settings/`, `command-palette/`. Logic a component needs sits in a camelCase `useName.ts` hook beside it. | — |
 
@@ -103,20 +105,21 @@ Backups and saves share one shape and one validator.
 | `useTracker` | Yes, localStorage | `TrackerData` plus the actions that change it |
 | `useUI` | No | Current tab; which dialog, drawer or sheet is open (Settings, the Start drawer); the log-attempt target; the toast; the row that just landed (it glows); and whether the Now card was emptied today |
 | `usePrefs` | Yes, `leetcode-tracker-prefs`, this device only | What Start opens: ask, LeetCode, NeetCode, or only the timer. Never backed up or synced. |
+| `useAccount` | Only the uid, in `leetcode-tracker-sync`, so the next visit restores the sign-in | Who's signed in, whether a sign-in is being checked or in progress, and why the last one failed |
 
 **Today's order.** `dayOrder()` in [`domain/day.ts`](../src/lib/domain/day.ts) turns the plan, the goal and the timer into what the Today screen shows:
 
-- **Now:** the problem being timed, else the first unfinished one. It gets the Now card with the clock and the one next step (Start, or Done — log attempt). Start also opens the problem: on LeetCode, or on NeetCode when LeetCode needs Premium (`practiceLink()`).
+- **Now:** the problem being timed, else the first unfinished one. It gets the Now card with the clock and the one next step (Start, or Done — log attempt). Start asks where to open the problem (see [Today's actions](#todays-actions)).
 - **The queue:** everything else still to do, in order, with a line where today's goal ends.
 - **Done:** finished problems, in a "Done today" group under the queue that folds away.
 
-Every row in Today, Tomorrow and Later is one `PlanRow`: grip, mark, title and meta, difficulty, an action, and ⋯. The ⋯ menu holds the rest, including the problem's links.
+Every row in Today, Tomorrow, Later and the backlog is one `PlanRow`: grip, mark, title and meta, difficulty, and its buttons (Start and ✕ in the queue; ✕, or + Today and ✕, elsewhere). A problem's links are in its drawer.
 
 The heading's "about N min to go" is `minutesLeft()`: the time boxes the goal still needs, less what the clock already has.
 
 **Drag and drop** for the queue and Tomorrow lives in [`components/today/usePlanBoard.ts`](../src/components/today/usePlanBoard.ts), with the list arithmetic (where a drop or an arrow key puts a row) in pure, tested [`board-lists.ts`](../src/components/today/board-lists.ts):
 
-- **Pinned:** the Now problem isn't in the drag list; it stays first. "Do first" in a row's ⋯ menu brings a problem up to it.
+- **Pinned:** the Now problem isn't in the drag list; it stays first.
 - **During a drag:** a draft copy of both lists drives the UI.
 - **On drop:** the change is written to the store (`moveToDay` + `reorderPlan`).
 - **Keyboard:** ↑/↓ on a row's grip moves it one place, crossing between the days at the ends of a list.
@@ -153,11 +156,22 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 
 ## Loading
 
-- **First load:** about 556 kB of JavaScript (176 kB gzipped).
+- **First load:** about 557 kB of JavaScript (177 kB gzipped).
 - **What's split out:** anything not needed for the first screen goes into its own chunk through `lazyComponent()` ([`_utils/lazy.ts`](../src/lib/_utils/lazy.ts)): History, Patterns, ⌘K, the problem drawer, the Python sheet, the Settings sheet, the short-on-time and calendar dialogs, the Start drawer, and the date picker (72 kB on its own).
 - **When it loads:** each chunk registers a preloader, and `App` runs them all once the browser is idle. In practice, nothing waits on the network when you open it. A failed load is retried the next time.
 - **How dialogs mount:** `MountWhenOpened` ([`shell/Overlays.tsx`](../src/components/shell/Overlays.tsx)) mounts a lazy dialog the first time it opens, and keeps it mounted so the close animation still plays.
+- **Firebase:** the `sync` chunk (Firebase Auth, about 30 kB gzipped) is not among the idle preloads. It loads when Settings opens, so Sign in can open Google's popup straight from the click, or at startup for someone who signed in before. Lint stops any other import of `firebase` or `@/lib/sync`.
 - **Shortcuts:** they live outside the lazy part. The ⌘K listener (`usePaletteShortcut`) is registered by `Overlays`, so it works before the palette's code has arrived.
+
+## Hosting and sign-in
+
+- **Hosting:** Firebase Hosting serves `dist/` ([`firebase.json`](../firebase.json)). Hashed files under `/assets/` are cached for a year; `index.html` is revalidated on every visit. There's no SPA rewrite, so a missing old chunk is a clear 404. `npm run deploy` runs the check, builds, and deploys the hosting and the Firestore rules.
+- **Config:** the web app's Firebase config is in [`.env`](../.env). It isn't a secret: it names the project, and [`firestore.rules`](../firestore.rules) protect the data.
+- **Signing in:** Settings › Your data has the account row.
+  - Sign in opens Google's popup ([`lib/sync/auth.ts`](../src/lib/sync/auth.ts)). A popup, unlike a redirect, works in browsers that block third-party storage, so the project's own `authDomain` works everywhere.
+  - Firebase keeps the session in IndexedDB. `useAccount` mirrors who's signed in, and the uid saved under `leetcode-tracker-sync` tells the next visit to restore it (`resumeSync()`).
+  - Closing the popup isn't an error; other failures show a message in the row.
+- **Locally:** `npm run emulators` runs the Auth and Firestore emulators (Java 21+). Set `VITE_USE_EMULATORS=true` in `.env.local` to sign in against them.
 
 ## Theme
 
@@ -170,9 +184,9 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 
 Tests sit next to the code they cover, in two Vitest projects:
 
-- **`unit` (`*.test.ts`, Node):** `_consts` (enum lists against their labels), `_utils` (dates, .ics), `domain` (SRS, status, planning, insights) and `store/persistence` (`normalize`, export, backup parsing).
+- **`unit` (`*.test.ts`, Node):** `_consts` (enum lists against their labels), `_utils` (dates, .ics), `domain` (SRS, status, planning, insights), `store/persistence` (`normalize`, export, backup parsing), and `lib/sync`: the account logic against a fake sign-in provider, and when the chunk loads.
 - **`dom` (`*.test.tsx`, jsdom + Testing Library):** components and hooks, tested the way they're used — by role and accessible name, through clicks and keys, asserting on the screen and the stores. Covered: the layout by width (`App`), the shell (header tabs, phone tab bar, timer pill, NowBar), Settings, the sidebar, the command palette, the Today view (Now card, heading, queue, keyboard and long-press reordering, the empty Now card, the backlog), the Start drawer and toasts, `useTheme`, `useMediaQuery` and `useRetained`. Store actions and preferences have unit tests too.
-- **Support:** [`src/test/builders.ts`](../src/test/builders.ts) builds test data (`idOf`, `attempt`, `progressOf`, `tracker`); [`src/test/stores.ts`](../src/test/stores.ts) resets both stores; [`src/test/setup-dom.ts`](../src/test/setup-dom.ts) gives each component test a clean DOM, storage and stores, plus the browser APIs jsdom lacks.
+- **Support:** [`src/test/builders.ts`](../src/test/builders.ts) builds test data (`idOf`, `attempt`, `progressOf`, `tracker`); [`src/test/stores.ts`](../src/test/stores.ts) resets the stores; [`src/test/setup-dom.ts`](../src/test/setup-dom.ts) gives each component test a clean DOM, storage and stores, plus the browser APIs jsdom lacks, and swaps the sync chunk for a fake, so no component test reaches Firebase.
 - **Not covered yet:** pointer dragging, the other views and dialogs, and store actions on their own. They get tests as later slices of [ADR-004](adr/0004-layout-redesign.md) touch them; end-to-end tests are planned.
 
 ## Known limits

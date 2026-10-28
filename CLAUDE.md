@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-A local-first React SPA for practicing the NeetCode 250. There's no backend; the saved data lives in localStorage.
+A local-first React SPA for practicing the NeetCode 250. The saved data lives in localStorage. Firebase (Hosting, Google sign-in) is set up; sync isn't built yet.
 
 **Read before changing code:**
 
@@ -16,7 +16,9 @@ npm run check                                   # type-check + lint + tests; mus
 npx vitest run src/lib/domain/planning.test.ts  # one test file
 npx vitest run --project dom                    # only component tests (*.test.tsx, jsdom)
 npm run dev                                     # http://localhost:5173
-npm run build                                   # also prints chunk sizes; first load is ~556 kB (176 kB gzip)
+npm run build                                   # also prints chunk sizes; first load is ~557 kB (177 kB gzip)
+npm run deploy                                  # check, build, then Firebase Hosting + Firestore rules; only when the owner asks
+npm run emulators                               # local Auth + Firestore (needs Java 21+); pair with VITE_USE_EMULATORS=true
 ```
 
 ## Rules
@@ -24,6 +26,7 @@ npm run build                                   # also prints chunk sizes; first
 - **Git:** never commit or push. The owner handles git; leave changes in the working tree.
 - **Dependencies:** add or upgrade only to releases at least 14 days old (`npm view <pkg> time`). Build-only tools go in `devDependencies`.
 - **Layering:** lint enforces it ([ADR-003](docs/adr/0003-lib-layout.md)).
+  - Firebase lives only in `src/lib/sync/`, a lazy chunk. Everything else reaches it through `loadSync()` / `withSync()` in `@/lib/sync/load`.
   - `domain` stays pure: no React, no store, no clock.
   - `_utils` imports nothing from the app.
   - Import `@/lib/domain`, `@/lib/store` and `@/lib/theme` as folders.
@@ -39,11 +42,16 @@ npm run build                                   # also prints chunk sizes; first
 ## Verifying UI changes
 
 - **Try it in the running app:** light and dark; phone, tablet and wide widths (the layout changes at `sm` and `lg`); and keyboard only (drag handles take ↑/↓).
-- **Clean up after:** browser checks write to localStorage under `leetcode-tracker`, `leetcode-tracker-theme` and `leetcode-tracker-prefs`. Remove any test data.
+- **Clean up after:** browser checks write to localStorage under `leetcode-tracker`, `leetcode-tracker-theme`, `leetcode-tracker-prefs` and `leetcode-tracker-sync`, and Firebase adds IndexedDB databases once Settings opens. Remove any test data.
+- **Sign-in:** the in-app browser blocks the Google popup. The owner tests signing in.
 
 ## Where things stand
 
-- **Cloud sync** (Firebase: Hosting, Google sign-in, Firestore) is designed in [ADR-002](docs/adr/0002-hosting-auth-sync.md), status Proposed. The owner's console steps are in [docs/firebase-setup.md](docs/firebase-setup.md); hosting and sign-in come next, once the owner sends the web config. Before sync itself, Phase 0:
+- **Cloud sync** (Firebase: Hosting, Google sign-in, Firestore) is designed in [ADR-002](docs/adr/0002-hosting-auth-sync.md).
+  - Project `leetcode-tracker-lollapalooza`; the owner's console steps are in [docs/firebase-setup.md](docs/firebase-setup.md).
+  - Done: hosting config, `npm run deploy`, Firestore rules, and Google sign-in in Settings › Your data (account only, no data sync yet).
+  - The owner runs the first deploy. Never deploy without being asked.
+  - Before sync itself, Phase 0:
   - make open tabs share one copy (they currently overwrite each other);
   - add `merge3()` with tests;
   - make the crash-screen reset clear the sync state.

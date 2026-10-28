@@ -22,7 +22,11 @@ export function lazyComponent<P extends object>(load: () => Promise<ComponentTyp
 }
 
 export function preloadLazyComponents() {
-  const run = () => preloaders.forEach((preload) => preload().catch(() => {}))
+  whenIdle(() => preloaders.forEach((preload) => preload().catch(() => {})))
+}
+
+/** Runs `run` once the page has finished its first work, so background loading never delays it. */
+export function whenIdle(run: () => void) {
   if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 3000 })
   else setTimeout(run, 1500)
 }

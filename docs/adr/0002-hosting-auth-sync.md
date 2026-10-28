@@ -1,6 +1,6 @@
 # ADR-002: Hosting, Google sign-in and cloud sync
 
-**Status:** Proposed
+**Status:** Accepted. Hosting and Google sign-in were built on 2026-10-27; sync (Phases 0, 2 and 3) is still to do.
 **Date:** 2026-10-26
 **Deciders:** Project owner
 **Changes:** replaces item 5 of ADR-001 and the fix plan in tech-debt #7 (see [5.2](#52-sync-model))
@@ -46,7 +46,8 @@
   - zustand `persist` writing to localStorage, at schema version 3;
   - `normalize()`, which validates every load and every backup.
 - **Safari:** it can delete script-written storage (localStorage, IndexedDB) for a site that hasn't been opened in 7 days of browsing. Home-screen web apps are exempt. Once the app is hosted, the cloud copy becomes the real backup on an iPhone.
-- **Dependency age:** dependencies must be at least two weeks old. That means `firebase@13.0.0` (Oct 7); 13.1.0 came out Oct 21.
+- **Dependency age:** dependencies must be at least two weeks old. That means `firebase@13.0.0` (Oct 7; 13.1.0 came out Oct 21) and `firebase-tools@15.33.0` (Oct 8; 15.34.0 came out Oct 14). Both were installed with `npm install --before=2026-10-13`, which holds their own dependencies to the same rule.
+  - `npm audit` flags `@grpc/grpc-js`, which Firestore pins to 1.9.x. The advisories are server-side, and grpc is only used when Firestore runs in Node; the browser build doesn't contain it.
 
 ### Assumptions
 
@@ -167,16 +168,18 @@ service cloud.firestore {
 
 ```
 src/lib/domain/merge.ts (+ test)     pure: merge3(); the domain rules, no Firebase
-src/lib/store/sync-store.ts          tiny zustand store the UI reads; no Firebase (eager)
-src/lib/_consts/storage.ts           + STORAGE_KEYS.sync = 'leetcode-tracker-sync'
+src/lib/store/account-store.ts       built: useAccount (who's signed in, status, error) + the saved uid; no Firebase (eager)
+src/lib/_consts/storage.ts           built: STORAGE_KEYS.sync = 'leetcode-tracker-sync'
 src/lib/sync/                        module, lazy chunk, imported only by signed-in users (ADR-003 rules)
-  index.ts      startSync(): wires auth, engine and store
-  config.ts     Firebase config; emulator switch in dev
-  auth.ts       signIn, signOut, onUserChanged     → firebase/auth
+  load.ts       built, eager and tiny: loadSync(), withSync(), resumeSync(); the only way in
+  index.ts      built: startSync(), signIn(), signOut(); later also wires the engine
+  config.ts     built: Firebase config from .env; emulator switch
+  auth.ts       built: AuthClient over firebase/auth (popup sign-in)
+  account.ts    built: account state from any AuthClient; tested with a fake one
   remote.ts     RemoteStore over Firestore         → firebase/firestore/lite (the only importer)
   engine.ts     triggers, debounce, lock, guards, first link; depends on RemoteStore only
   engine.test.ts  with an in-memory RemoteStore
-  meta.ts       read/write STORAGE_KEYS.sync
+  meta.ts       read/write STORAGE_KEYS.sync (grows from { uid } to SyncMeta)
 ```
 
 ```ts
@@ -271,9 +274,13 @@ Each record in local and remote is compared with the base:
 
 ### 3.6 Sign-in and first link
 
-- **Sign-in:** Firebase Auth's Google provider, using `signInWithPopup` from the button click. If the popup is blocked, it falls back to `signInWithRedirect`. The session lives in IndexedDB, and tokens refresh by themselves.
-- **`authDomain`:** set it to the domain the app is served from (`<project>.web.app` or a custom domain), and register `https://<that domain>/__/auth/handler` as a redirect URI. That's Firebase's guidance for browsers that partition third-party storage; without it, redirect sign-in can fail.
-- **Where it shows up:** the sidebar's Backup section. "Saved in this browser · Sign in to sync" becomes "Synced 2 min ago · you@gmail.com", or Offline, or an error with a retry.
+- **Sign-in:** Firebase Auth's Google provider, using `signInWithPopup` from the button click. The session lives in IndexedDB, and tokens refresh by themselves.
+  - **Keeping the popup unblocked:** the sync chunk loads when Settings opens. The click then calls `signInWithPopup` without waiting on the network.
+  - **If it's blocked anyway,** the row asks you to allow pop-ups. *Changed at build time:* there's no redirect fallback, which would only matter for a home-screen app, where popups don't work.
+- **`authDomain`:** the project's default `<project>.firebaseapp.com`. Popup sign-in works with it in browsers that partition third-party storage. Firebase's same-domain advice (`<project>.web.app`, plus `https://<that domain>/__/auth/handler` as a redirect URI) applies to redirect sign-in, so it comes with the redirect fallback, if ever.
+- **Where it shows up:** Settings › Your data.
+  - Built: "Sign in", or the account's photo, name and email with "Sign out"; a message when sign-in fails. Closing the popup isn't an error.
+  - With sync it becomes "Synced 2 min ago", Offline, or an error with a retry.
 - **First link** (no base for this uid on this device):
 
   | Cloud | This device | What happens |
@@ -433,13 +440,13 @@ There's no paging; it's a personal app.
 
 The owner's one-time console steps (project, web app, Google sign-in, database) are in [firebase-setup.md](../firebase-setup.md).
 
-4. [ ] Create the Firebase project (Spark), add `firebase.json` and `npm run deploy`, and check the headers.
+4. [x] Create the Firebase project (Spark), add `firebase.json` and `npm run deploy`. The owner runs the first deploy, then checks the headers.
 5. [ ] Until Phase 2 ships, the only backup is Export, and Safari can wipe a site's storage after 7 days without a visit.
 
 **Phase 2: sign-in and sync (about 2 days)**
 
-6. [ ] Install `firebase@13.0.0`, add `src/lib/sync/*` (lazy) and `src/lib/store/sync-store.ts`.
-7. [ ] Add `firestore.rules` and `firestore.indexes.json` (exempt `data`).
+6. [ ] Install `firebase@13.0.0` and add `src/lib/sync/*` (lazy). *Sign-in is done:* the account store, the auth client, and the Settings row, in a 29.5 kB gzip chunk. Remaining: `remote.ts`, `engine.ts`, `meta.ts`.
+7. [x] Add `firestore.rules` and `firestore.indexes.json` (exempt `data`). They deploy with `npm run deploy`.
 8. [ ] Add the first-link dialog, the status line in the Backup section, and the schema and mass-deletion guards.
 9. [ ] Write engine tests with an in-memory `RemoteStore`. Rules tests against the emulator come with the integration-test setup.
 
@@ -451,9 +458,9 @@ The owner's one-time console steps (project, web app, Google sign-in, database) 
 
 ## 8. Open questions
 
-1. **Who can sign in?** Anyone, each with their own data (the default; Spark keeps the cost at $0), or only you, via an allowlist in the rules?
-2. **Domain:** the free `<project>.web.app`, or a custom domain?
-3. **Should the running timer sync?** Start it on the laptop and see it on the phone. Default: yes, the newer side wins.
+1. **Who can sign in?** Anyone, each with their own data (the default; Spark keeps the cost at $0), or only you, via an allowlist in the rules? *Using the default for now.*
+2. **Domain:** the free `<project>.web.app`, or a custom domain? *`leetcode-tracker-lollapalooza.web.app` for now.*
+3. **Should the running timer sync?** Start it on the laptop and see it on the phone. Default: yes, the newer side wins. *Decide before sync is built.*
 
 ## References
 

@@ -1,16 +1,39 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
     "no-restricted-imports": [
       "error",
       {
         "patterns": [
           {
-            "group": ["@/lib/domain/*", "@/lib/store/*", "@/lib/theme/*"],
+            "group": [
+              "@/lib/domain/*",
+              "@/lib/store/*",
+              "@/lib/theme/*"
+            ],
             "message": "Import the module, not its files: '@/lib/domain', '@/lib/store', '@/lib/theme'."
+          },
+          {
+            "group": [
+              "firebase",
+              "firebase/*",
+              "@/lib/sync",
+              "@/lib/sync/*",
+              "!@/lib/sync/load"
+            ],
+            "message": "Firebase stays in the lazy sync chunk: reach it through loadSync()/withSync() from '@/lib/sync/load'."
           }
         ]
       }
@@ -18,52 +41,46 @@
   },
   "overrides": [
     {
-      "files": ["src/**/use-*"],
-      "plugins": ["unicorn"],
-      "rules": { "unicorn/filename-case": ["error", { "case": "camelCase" }] }
-    },
-    {
-      "files": ["src/lib/_consts/**"],
+      "files": [
+        "src/**/use-*"
+      ],
+      "plugins": [
+        "unicorn"
+      ],
       "rules": {
-        "no-restricted-imports": [
-          "error",
-          { "patterns": [{ "group": ["@/components/**", "@/data/**", "@/lib/**"], "message": "_consts holds plain values: import types only." }] }
-        ]
-      }
-    },
-    {
-      "files": ["src/lib/_utils/**"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          { "patterns": [{ "group": ["@/**"], "message": "_utils is app-agnostic: it can't import from the app." }] }
-        ]
-      }
-    },
-    {
-      "files": ["src/lib/_hooks/**"],
-      "rules": {
-        "no-restricted-imports": [
+        "unicorn/filename-case": [
           "error",
           {
-            "patterns": [
-              { "group": ["@/components/**"], "message": "Hooks sit below the UI: they can't import components." },
-              { "group": ["@/lib/domain/*", "@/lib/store/*", "@/lib/theme/*"], "message": "Import the module, not its files." }
-            ]
+            "case": "camelCase"
           }
         ]
       }
     },
     {
-      "files": ["src/lib/domain/**"],
+      "files": [
+        "src/lib/_consts/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["react", "react-dom", "react/**", "zustand", "zustand/**", "@/components/**", "@/lib/_hooks/**", "@/lib/store", "@/lib/store/*", "@/lib/theme", "@/lib/theme/*"],
-                "message": "domain is pure rules: no React, no state, no UI."
+                "group": [
+                  "@/components/**",
+                  "@/data/**",
+                  "@/lib/**"
+                ],
+                "message": "_consts holds plain values: import types only."
+              },
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
               }
             ]
           }
@@ -71,30 +88,211 @@
       }
     },
     {
-      "files": ["src/lib/store/**"],
+      "files": [
+        "src/lib/_utils/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["react", "react-dom", "react/**", "@/components/**", "@/lib/_hooks/**", "@/lib/theme", "@/lib/theme/*"],
-                "message": "The store holds state and actions: no React, no UI."
+                "group": [
+                  "@/**"
+                ],
+                "message": "_utils is app-agnostic: it can't import from the app."
               },
-              { "group": ["@/lib/domain/*"], "message": "Import the module, not its files." }
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
+              }
             ]
           }
         ]
       }
     },
     {
-      "files": ["src/lib/theme/**"],
+      "files": [
+        "src/lib/_hooks/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
-              { "group": ["@/components/**", "@/lib/domain", "@/lib/domain/*", "@/lib/store", "@/lib/store/*"], "message": "The theme knows nothing about the tracker or the UI." }
+              {
+                "group": [
+                  "@/components/**"
+                ],
+                "message": "Hooks sit below the UI: they can't import components."
+              },
+              {
+                "group": [
+                  "@/lib/domain/*",
+                  "@/lib/store/*",
+                  "@/lib/theme/*"
+                ],
+                "message": "Import the module, not its files."
+              },
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/lib/domain/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "react",
+                  "react-dom",
+                  "react/**",
+                  "zustand",
+                  "zustand/**",
+                  "@/components/**",
+                  "@/lib/_hooks/**",
+                  "@/lib/store",
+                  "@/lib/store/*",
+                  "@/lib/theme",
+                  "@/lib/theme/*"
+                ],
+                "message": "domain is pure rules: no React, no state, no UI."
+              },
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/lib/store/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "react",
+                  "react-dom",
+                  "react/**",
+                  "@/components/**",
+                  "@/lib/_hooks/**",
+                  "@/lib/theme",
+                  "@/lib/theme/*"
+                ],
+                "message": "The store holds state and actions: no React, no UI."
+              },
+              {
+                "group": [
+                  "@/lib/domain/*"
+                ],
+                "message": "Import the module, not its files."
+              },
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/lib/theme/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/components/**",
+                  "@/lib/domain",
+                  "@/lib/domain/*",
+                  "@/lib/store",
+                  "@/lib/store/*"
+                ],
+                "message": "The theme knows nothing about the tracker or the UI."
+              },
+              {
+                "group": [
+                  "firebase",
+                  "firebase/*",
+                  "@/lib/sync",
+                  "@/lib/sync/*"
+                ],
+                "message": "Firebase stays in the lazy sync chunk, and only components reach it, through '@/lib/sync/load'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/lib/sync/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "react",
+                  "react-dom",
+                  "react/**",
+                  "@/components/**",
+                  "@/lib/_hooks/**"
+                ],
+                "message": "Sync runs outside React: no components or hooks."
+              },
+              {
+                "group": [
+                  "@/lib/domain/*",
+                  "@/lib/store/*",
+                  "@/lib/theme/*"
+                ],
+                "message": "Import the module, not its files."
+              }
             ]
           }
         ]

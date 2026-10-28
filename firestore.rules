@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Each signed-in person reads and writes only their own document (ADR-002 §3.2).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    function validUser() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['schema', 'rev', 'savedAt', 'changedAt', 'data'])
+        && d.schema is int && d.rev is int && d.changedAt is string
+        && d.data is string && d.data.size() < 1000000
+        && d.savedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validUser() && request.resource.data.rev == 1;
+      allow update: if owner(uid) && validUser()
+        && request.resource.data.rev == resource.data.rev + 1       // no blind overwrites
+        && request.resource.data.schema >= resource.data.schema;    // an outdated tab can't downgrade
+      allow delete: if false;                                       // delete the account from the console for now
+
+      match /backups/{slot} {
+        allow read: if owner(uid);
+        allow write: if owner(uid) && slot.matches('^([0-9]|1[0-3])$')
+          && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+      }
+    }
+  }
+}
