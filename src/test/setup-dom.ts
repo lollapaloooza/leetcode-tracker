@@ -29,7 +29,7 @@ Element.prototype.releasePointerCapture = vi.fn()
 // Components never reach Firebase: the sync chunk is a fake that records its calls. Its own logic is
 // tested in lib/sync with a fake sign-in provider.
 vi.mock('@/lib/sync/load', () => {
-  const sync = { startSync: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }
+  const sync = { startSync: vi.fn(), signIn: vi.fn(), signOut: vi.fn(), answerChoice: vi.fn() }
   return { loadSync: vi.fn(async () => sync), withSync: vi.fn((run: (s: typeof sync) => unknown) => run(sync)), resumeSync: vi.fn() }
 })
 

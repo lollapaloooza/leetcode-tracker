@@ -55,7 +55,7 @@ describe('loading the sync chunk', () => {
     useAccount.setState({ status: 'checking' })
     withSync(vi.fn())
     await expect(loadSync()).rejects.toThrow()
-    await vi.waitFor(() => expect(useAccount.getState().error).toMatch(/Couldn’t load sign-in/))
+    await vi.waitFor(() => expect(useAccount.getState().error).toBe('Cannot load sign-in. Try again.'))
     expect(useAccount.getState().status).toBe('signed-out')
 
     vi.doMock('./index', () => sync)

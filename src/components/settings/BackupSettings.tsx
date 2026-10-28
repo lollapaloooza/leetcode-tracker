@@ -1,7 +1,7 @@
 import { useRef, type ChangeEvent } from 'react'
 import { DownloadIcon, UploadIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AccountRow } from './AccountRow'
+import { useAccount } from '@/lib/store'
 import { ImportDialog } from './ImportDialog'
 import { SettingsGroup } from './SettingRow'
 import { exportBackup, useBackupImport } from './useBackup'
@@ -9,6 +9,8 @@ import { exportBackup, useBackupImport } from './useBackup'
 export function BackupSettings() {
   const fileInput = useRef<HTMLInputElement>(null)
   const backup = useBackupImport()
+  // Signed in, the cloud keeps a copy, so there's nothing to warn about.
+  const signedIn = useAccount((s) => s.account !== null)
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -18,11 +20,10 @@ export function BackupSettings() {
 
   return (
     <SettingsGroup title="Your data">
-      <AccountRow />
       <div className="flex flex-col gap-3 py-2">
-        <p className="text-[13px] text-muted-foreground">
-          Progress is saved in this browser only. Export a backup now and then, and before clearing site data.
-        </p>
+        {!signedIn && (
+          <p className="text-[13px] text-muted-foreground">Your progress is only in this browser. Sign in to keep a copy in the cloud.</p>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportBackup}>
             <DownloadIcon />
@@ -35,7 +36,7 @@ export function BackupSettings() {
           <input ref={fileInput} type="file" accept="application/json" hidden aria-label="Backup file to import" onChange={onFile} />
         </div>
       </div>
-      <ImportDialog step={backup.step} onReplace={backup.replace} onDismiss={backup.dismiss} />
+      <ImportDialog step={backup.step} everywhere={signedIn} onReplace={backup.replace} onDismiss={backup.dismiss} />
     </SettingsGroup>
   )
 }

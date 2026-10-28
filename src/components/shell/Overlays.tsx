@@ -1,6 +1,6 @@
 import { LogAttemptDialog } from '@/components/LogAttemptDialog'
 import { lazyComponent } from '@/lib/_utils/lazy'
-import { useUI } from '@/lib/store'
+import { useAccount, useUI } from '@/lib/store'
 import { MountWhenOpened } from './MountWhenOpened'
 import { Toaster } from './Toaster'
 import { usePaletteShortcut } from './usePaletteShortcut'
@@ -13,6 +13,7 @@ const ShortOnTimeDialog = lazyComponent(() => import('@/components/ShortOnTimeDi
 const CalendarDialog = lazyComponent(() => import('@/components/CalendarDialog').then((m) => m.CalendarDialog))
 const SettingsSheet = lazyComponent(() => import('@/components/settings/SettingsSheet').then((m) => m.SettingsSheet))
 const StartSheet = lazyComponent(() => import('@/components/timer/StartSheet').then((m) => m.StartSheet))
+const SyncChoiceDialog = lazyComponent(() => import('./SyncChoiceDialog').then((m) => m.SyncChoiceDialog))
 
 /** Dialogs, drawers and the toast. Each lazy one mounts the first time it opens, so its code loads only when needed. */
 export function Overlays({ today }: { today: string }) {
@@ -23,6 +24,7 @@ export function Overlays({ today }: { today: string }) {
   const calendarOpen = useUI((s) => s.calendarOpen)
   const settingsOpen = useUI((s) => s.settingsOpen)
   const startOpen = useUI((s) => s.startFor !== null)
+  const syncChoiceOpen = useAccount((s) => s.choice !== null)
   usePaletteShortcut()
 
   return (
@@ -49,6 +51,9 @@ export function Overlays({ today }: { today: string }) {
       {/* After Settings, so the calendar dialog it opens stacks on top. */}
       <MountWhenOpened open={calendarOpen}>
         <CalendarDialog />
+      </MountWhenOpened>
+      <MountWhenOpened open={syncChoiceOpen}>
+        <SyncChoiceDialog />
       </MountWhenOpened>
       <Toaster />
     </>

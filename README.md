@@ -61,13 +61,19 @@ Open http://localhost:5173. A fresh start plans one problem on weekdays and thre
   - separate weekday and weekend amounts, and **Core 150 first** for Suggest;
   - **Add to calendar** downloads an .ics file with recurring practice blocks and a 5-minute reminder.
 - **Layout:** on wide screens the tabs sit in the header and the sidebar beside the list. Below laptop width the sidebar's cards move to the top of the Progress tab, and phones get a tab bar at the bottom.
-- **Settings** (the gear in the header): the routine above, the interview date, what Start opens, the theme (System, Light or Dark), your Google account and backups.
+- **Settings** (the gear in the header): the routine above, the interview date, what Start opens, the theme (System, Light or Dark) and backups.
+- **Account:** the person icon at the end of the header signs you in with Google. Then it shows your photo, with Settings, Export backup and Sign out.
 - **⌘K:** find any problem and act on it: add it to today, start the timer, log an attempt, open it on LeetCode or NeetCode or watch the video, or set its status.
 - **Python:** a slide-out cheatsheet of Python for LeetCode, with the JavaScript equivalent next to each item.
 
 ## Your data
 
-- **Where it's stored:** progress is saved in this browser's localStorage under the key `leetcode-tracker`. Clearing site data, or using another browser or device, starts from scratch. You can sign in with Google in Settings, but it doesn't move any data yet: cloud sync is next ([ADR-002](docs/adr/0002-hosting-auth-sync.md)).
+- **Where it's stored:** progress is saved in this browser's localStorage under the key `leetcode-tracker`.
+- **Cloud:** sign in with Google from the person icon at the top right, and your progress is kept in Firestore too, so it's on all your devices ([ADR-006](docs/adr/0006-sync-per-item.md)).
+  - Each change uploads only what it touched, about 2 seconds later. Other devices fetch it when you open them or come back to them.
+  - The first sign-in on a device keeps both sides, unless they differ; then it asks once which one to keep.
+  - A running timer stays on its device.
+  - Signed out, clearing site data or switching browsers starts from scratch.
 - **Backups:** **Export backup** in Settings downloads everything as JSON. **Import** shows what a file contains before it replaces anything.
 - **Old and damaged saves:** older saves are upgraded on load, and a damaged one loses only its bad entries, not the whole save.
 - **If the app ever crashes:** the error screen offers to download your raw saved data, reload, or reset.
@@ -92,10 +98,11 @@ firebase.json   hosting, cache headers and emulators; firestore.rules and .env s
 - [docs/architecture.md](docs/architecture.md): how the app works, including its data flow, state, loading and theme
 - Decisions:
   - [ADR-001](docs/adr/0001-code-structure.md): layered structure
-  - [ADR-002](docs/adr/0002-hosting-auth-sync.md): hosting, sign-in and sync (hosting and sign-in built; sync next)
+  - [ADR-002](docs/adr/0002-hosting-auth-sync.md): hosting and sign-in (its sync design is replaced by ADR-006)
   - [ADR-003](docs/adr/0003-lib-layout.md): `lib` layout and lint-enforced boundaries
   - [ADR-004](docs/adr/0004-layout-redesign.md): the "focus first" layout, built on the current code in slices
   - [ADR-005](docs/adr/0005-today-actions-and-backlog.md): simpler Today actions, the backlog and the Start drawer
+  - [ADR-006](docs/adr/0006-sync-per-item.md): cloud sync, one document per item
 - [docs/firebase-setup.md](docs/firebase-setup.md): the one-time Firebase console steps
 - [docs/tech-debt.md](docs/tech-debt.md): the debt audit and what's still open
 

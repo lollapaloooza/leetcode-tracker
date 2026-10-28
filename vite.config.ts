@@ -12,6 +12,12 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  // The sync chunk loads Firebase late. Prepare its packages together up front, so the dev server
+  // doesn't find Firestore mid-session and serve it a second copy of firebase/app ("Service
+  // firestore/lite is not available").
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore/lite'],
+  },
   test: {
     // A zone with daylight saving, so date math is tested across clock changes wherever it runs.
     env: { TZ: 'America/New_York' },

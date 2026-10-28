@@ -6,12 +6,14 @@ import { exportBackup, type ImportStep } from './useBackup'
 
 interface ImportDialogProps {
   step: ImportStep | null
+  /** Signed in: the import reaches every device through the cloud. */
+  everywhere: boolean
   onReplace: () => void
   onDismiss: () => void
 }
 
 /** Confirm before a backup replaces what's saved, or say why the file can't be imported. */
-export function ImportDialog({ step, onReplace, onDismiss }: ImportDialogProps) {
+export function ImportDialog({ step, everywhere, onReplace, onDismiss }: ImportDialogProps) {
   const shown = useRetained(step)
 
   return (
@@ -22,7 +24,8 @@ export function ImportDialog({ step, onReplace, onDismiss }: ImportDialogProps) 
             <DialogHeader>
               <DialogTitle>Replace your progress?</DialogTitle>
               <DialogDescription>
-                Everything saved in this browser is replaced with <span className="font-medium text-foreground">{shown.fileName}</span>.
+                This replaces your progress {everywhere ? 'on all your devices' : 'in this browser'} with{' '}
+                <span className="font-medium text-foreground">{shown.fileName}</span>.
               </DialogDescription>
             </DialogHeader>
             <BackupContents data={shown.data} />

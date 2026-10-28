@@ -1,6 +1,6 @@
 # ADR-002: Hosting, Google sign-in and cloud sync
 
-**Status:** Accepted. Hosting and Google sign-in were built on 2026-10-27; sync (Phases 0, 2 and 3) is still to do.
+**Status:** Accepted. Hosting and Google sign-in were built on 2026-10-27. **The sync design is replaced by [ADR-006](0006-sync-per-item.md)** (one document per item, built 2026-10-28): §3.1, §3.4–3.5, the first link in §3.6, §5.2–5.3, and Phases 0 and 3 below are history.
 **Date:** 2026-10-26
 **Deciders:** Project owner
 **Changes:** replaces item 5 of ADR-001 and the fix plan in tech-debt #7 (see [5.2](#52-sync-model))
@@ -275,19 +275,21 @@ Each record in local and remote is compared with the base:
 ### 3.6 Sign-in and first link
 
 - **Sign-in:** Firebase Auth's Google provider, using `signInWithPopup` from the button click. The session lives in IndexedDB, and tokens refresh by themselves.
-  - **Keeping the popup unblocked:** the sync chunk loads when Settings opens. The click then calls `signInWithPopup` without waiting on the network.
-  - **If it's blocked anyway,** the row asks you to allow pop-ups. *Changed at build time:* there's no redirect fallback, which would only matter for a home-screen app, where popups don't work.
+  - **Keeping the popup unblocked:** the sync chunk loads when the sign-in card opens. The click on its Google button then calls `signInWithPopup` without waiting on the network.
+  - **If it's blocked anyway,** the card asks you to allow pop-ups. *Changed at build time:* there's no redirect fallback, which would only matter for a home-screen app, where popups don't work.
 - **`authDomain`:** the project's default `<project>.firebaseapp.com`. Popup sign-in works with it in browsers that partition third-party storage. Firebase's same-domain advice (`<project>.web.app`, plus `https://<that domain>/__/auth/handler` as a redirect URI) applies to redirect sign-in, so it comes with the redirect fallback, if ever.
-- **Where it shows up:** Settings › Your data.
-  - Built: "Sign in", or the account's photo, name and email with "Sign out"; a message when sign-in fails. Closing the popup isn't an error.
-  - With sync it becomes "Synced 2 min ago", Offline, or an error with a retry.
+- **Where it shows up** (*changed 2026-10-28*, design: the "Sign-in" boards on the layout canvas): the last button in the header.
+  - **Signed out:** a person icon that opens a short card with Google's button. **Signed in:** your photo, which opens a menu with Settings, Export backup and Sign out. Phones get both as bottom sheets.
+  - **Only two states,** signed in or not: no sync badge and no status line. Sync works quietly; a toast appears only when you must act (reload for a new version, sign in again).
+  - **Text:** as short as possible, in ASD-STE100 style.
+  - Closing the popup isn't an error.
 - **First link** (no base for this uid on this device):
 
   | Cloud | This device | What happens |
   |---|---|---|
   | No document | anything | Create the document from this device |
   | Has data | empty (no attempts, progress, plans or notes) | Take the cloud data |
-  | Has data | has data | Ask: **Combine** (recommended), **Use cloud data**, or **Use this device's data**, with a `BackupSummary` for each side |
+  | Has data | has data | Ask once: **Use cloud data** or **Use this device's data**. *Changed 2026-10-28:* no Combine, since combining would need to show what gets combined. |
 
 - **Sign out:** local data stays, and `leetcode-tracker-sync` is cleared. Signing in later with a different account counts as a first link.
 
@@ -348,10 +350,10 @@ Measured with `firebase@13.0.0` + Vite 8, minified and gzipped:
 
 | Failure | Handling |
 |---|---|
-| Offline | Status shows "Offline — saved on this device". Retries on `online`. Nothing to queue: the diff against the base is the queue. |
+| Offline | Nothing shown; practice goes on. Retries on `online`. Nothing to queue: the diff against the base is the queue. |
 | Two devices push at once | Firestore retries the transaction, and each retry merges again. |
 | Tab closed mid-push | Local still differs from the base, so it's pushed on the next open. |
-| Token can't refresh | Status says "Sign in again". Local work continues. |
+| Token can't refresh | A toast says to sign in again. Local work continues. |
 | Quota used up (`resource-exhausted`) | Back off until the next day. The app is unaffected. |
 | Document too large | Warning at 600 KB (see 3.1); a write over 1 MiB is rejected. |
 | Outdated tab after a schema bump | It stops syncing and shows "Reload to update". The rules reject a lower `schema`. |
@@ -364,7 +366,7 @@ Measured with `firebase@13.0.0` + Vite 8, minified and gzipped:
 
 There's no paging; it's a personal app.
 
-- **Main signal:** the in-app sync status line.
+- **Main signal:** none in the UI by design (2026-10-28); a toast only when you must act.
 - **Errors:** logged to the console with the Firestore error code.
 - **Quota use:** the Firebase console's usage pages for Firestore and Hosting.
 
@@ -447,7 +449,7 @@ The owner's one-time console steps (project, web app, Google sign-in, database) 
 
 6. [ ] Install `firebase@13.0.0` and add `src/lib/sync/*` (lazy). *Sign-in is done:* the account store, the auth client, and the Settings row, in a 29.5 kB gzip chunk. Remaining: `remote.ts`, `engine.ts`, `meta.ts`.
 7. [x] Add `firestore.rules` and `firestore.indexes.json` (exempt `data`). They deploy with `npm run deploy`.
-8. [ ] Add the first-link dialog, the status line in the Backup section, and the schema and mass-deletion guards.
+8. [ ] Add the first-link question (cloud or this device), and the schema and mass-deletion guards. The header account button is done.
 9. [ ] Write engine tests with an in-memory `RemoteStore`. Rules tests against the emulator come with the integration-test setup.
 
 **Phase 3: safety net (about half a day)**

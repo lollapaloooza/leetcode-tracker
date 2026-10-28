@@ -1,7 +1,6 @@
 {
   "indexes": [],
   "fieldOverrides": [
-    { "collectionGroup": "users", "fieldPath": "data", "indexes": [] },
-    { "collectionGroup": "backups", "fieldPath": "data", "indexes": [] }
+    { "collectionGroup": "items", "fieldPath": "data", "indexes": [] }
   ]
 }

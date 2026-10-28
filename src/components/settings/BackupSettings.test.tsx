@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { downloadFile } from '@/lib/_utils/browser'
-import { exportable, useTracker } from '@/lib/store'
+import { exportable, useAccount, useTracker } from '@/lib/store'
 import { attempt, progressOf, tracker } from '@/test/builders'
 import { resetStores } from '@/test/stores'
 import { BackupSettings } from './BackupSettings'
@@ -47,6 +47,26 @@ describe('BackupSettings', () => {
     await user.upload(screen.getByLabelText('Backup file to import'), file(JSON.stringify(exportable(backup))))
     await user.click(await screen.findByRole('button', { name: 'Cancel' }))
     expect(useTracker.getState().progress).toEqual({})
+  })
+
+  it('says the progress is only in this browser while signed out, and nothing once signed in', () => {
+    const { rerender } = render(<BackupSettings />)
+    expect(screen.getByText('Your progress is only in this browser. Sign in to keep a copy in the cloud.')).toBeInTheDocument()
+
+    act(() => useAccount.setState({ status: 'signed-in', account: { uid: 'u1', name: 'Ada', email: null, photo: null } }))
+    rerender(<BackupSettings />)
+    expect(screen.queryByText(/only in this browser/)).not.toBeInTheDocument()
+  })
+
+  it('says an import replaces the progress on all your devices once signed in', async () => {
+    useAccount.setState({ status: 'signed-in', account: { uid: 'u1', name: 'Ada', email: null, photo: null } })
+    const user = userEvent.setup()
+    render(<BackupSettings />)
+
+    await user.upload(screen.getByLabelText('Backup file to import'), file(JSON.stringify(exportable(backup))))
+    expect(await screen.findByRole('dialog', { name: 'Replace your progress?' })).toHaveTextContent(
+      'This replaces your progress on all your devices with backup.json.',
+    )
   })
 
   it("explains why a file can't be imported", async () => {

@@ -1,4 +1,5 @@
-import { saveUid, useAccount, type Account } from '@/lib/store'
+import { useAccount, type Account } from '@/lib/store'
+import { clearMeta, openMeta } from './meta'
 
 /** What the account code needs from a sign-in provider: Firebase in the app, a fake in tests. */
 export interface AuthClient {
@@ -11,7 +12,9 @@ export interface AuthClient {
 /** Keeps the account store, and the uid saved for the next visit, in step with the provider. */
 export function watchAccount(client: AuthClient) {
   return client.onUserChanged((account) => {
-    saveUid(account?.uid ?? null)
+    // Signing out forgets the account and its sync state; the progress stays on this device.
+    if (account) openMeta(account.uid)
+    else clearMeta()
     // The provider reports "nobody" once it has loaded, which can land while the popup is still open.
     useAccount.setState((s) => ({ account, status: account ? 'signed-in' : s.status === 'signing-in' ? 'signing-in' : 'signed-out' }))
   })
@@ -37,17 +40,18 @@ export async function signOutWith(client: AuthClient) {
 /** Closing the popup is changing your mind, not an error. */
 const CANCELLED = new Set(['auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/user-cancelled'])
 
+// Short and plain (ASD-STE100 style). The console gets the full error for the owner.
 const MESSAGES: Record<string, string> = {
-  'auth/popup-blocked': 'Your browser blocked the sign-in window. Allow pop-ups for this site, then try again.',
-  'auth/network-request-failed': 'Couldn’t reach Google. Check your connection, then try again.',
-  'auth/unauthorized-domain': 'This address can’t sign in yet. Add it in the Firebase console under Authentication › Settings › Authorized domains.',
-  'auth/operation-not-allowed': 'Google sign-in is turned off for this project. Turn it on in the Firebase console under Authentication › Sign-in method.',
+  'auth/popup-blocked': 'Your browser blocked the sign-in window. Allow pop-ups for this site.',
+  'auth/network-request-failed': 'No connection. Try again when you are online.',
+  'auth/unauthorized-domain': 'Sign-in is not set up for this address.',
+  'auth/operation-not-allowed': 'Google sign-in is off for this app.',
 }
 
 /** What to tell the person when sign-in fails, or null when they closed the popup. */
 export function signInError(error: unknown): string | null {
   const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
   if (CANCELLED.has(code)) return null
-  if (!(code in MESSAGES)) console.error('Sign-in failed', error)
-  return MESSAGES[code] ?? 'Sign-in didn’t work. Try again in a moment.'
+  console.error('Sign-in failed', error)
+  return MESSAGES[code] ?? 'Sign-in failed. Try again.'
 }

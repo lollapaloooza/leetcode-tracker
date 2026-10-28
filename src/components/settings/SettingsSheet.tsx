@@ -17,7 +17,7 @@ export function SettingsSheet({ today }: { today: string }) {
       <SheetContent className="gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Settings</SheetTitle>
-          <SheetDescription className="sr-only">Your routine, interview date, what Start opens, theme, account and backups</SheetDescription>
+          <SheetDescription className="sr-only">Your routine, interview date, what Start opens, theme and backups</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-6">
           <RoutineSettings />

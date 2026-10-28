@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { STORAGE_KEYS } from '@/lib/_consts/storage'
+import type { TrackerData } from '@/types'
 
 /** The Google account someone signed in with. */
 export interface Account {
@@ -17,6 +18,8 @@ interface AccountState {
   account: Account | null
   /** Why the last sign-in failed, in words for the person. Null when it worked, or they closed the popup. */
   error: string | null
+  /** First sign-in on this device, and its progress differs from the cloud's: both sides, to pick one */
+  choice: { cloud: TrackerData; device: TrackerData } | null
 }
 
 /**
@@ -27,6 +30,7 @@ export const useAccount = create<AccountState>()(() => ({
   status: savedUid() ? 'checking' : 'signed-out',
   account: null,
   error: null,
+  choice: null,
 }))
 
 /** The uid this device was last signed in with, so the next visit knows to restore the session. */
@@ -37,14 +41,5 @@ export function savedUid(): string | null {
     return typeof saved.uid === 'string' && saved.uid !== '' ? saved.uid : null
   } catch {
     return null // unreadable or blocked storage: treat it as signed out
-  }
-}
-
-export function saveUid(uid: string | null) {
-  try {
-    if (uid) localStorage.setItem(STORAGE_KEYS.sync, JSON.stringify({ uid }))
-    else localStorage.removeItem(STORAGE_KEYS.sync)
-  } catch {
-    // Blocked storage: the sign-in still works, it just isn't restored on the next visit.
   }
 }

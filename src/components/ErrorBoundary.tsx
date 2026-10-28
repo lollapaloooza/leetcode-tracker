@@ -35,6 +35,8 @@ function CrashScreen({ error }: { error: Error }) {
   const reset = () => {
     try {
       localStorage.removeItem(STORAGE_KEYS.tracker)
+      // Sync starts over too, so a signed-in device fetches its progress again instead of keeping the empty start.
+      localStorage.removeItem(STORAGE_KEYS.sync)
     } finally {
       location.reload()
     }

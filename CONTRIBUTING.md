@@ -54,6 +54,9 @@ If lint rejects an import, the code is usually in the wrong layer: move it, don'
   - hooks are camelCase, file and function alike (`useNowCard.ts` exports `useNowCard`); lint rejects a `use-name.ts` file;
   - other modules are `kebab-case.ts`;
   - every export is named, except `App`.
+- **UI text:** people should read as little as possible.
+  - Follow ASD-STE100 where you can: short sentences, active voice, one instruction per sentence, plain words, no contractions.
+  - Prefer a clear label to a sentence, and one sentence to two. *Sign in to keep your progress on all your devices.*
 - **Comments:**
   - say *why*, or what isn't obvious from the code;
   - exported functions get a one-line `/** … */` describing their behavior;
@@ -121,7 +124,7 @@ Every save and every backup passes through `normalize()`, so a shape change touc
 5. **Old saves:** if existing saves need converting (a rename, a new structure, a removed field), detect the old shape in `normalize()` and bump `STORAGE_VERSION`. Simply adding a field with a default needs no bump, because `normalize()` runs on every load.
 6. **Tests:** add cases to `persistence.test.ts` for an old save converting, an invalid value dropped, and an export/import round trip.
 
-Once cloud sync exists, the field also needs a merge rule ([ADR-002 §3.5](docs/adr/0002-hosting-auth-sync.md#35-merge-rules-merge3base-local-remote)).
+7. **Sync:** give the field an item in `src/lib/sync/items.ts` (`itemsOf`, `withItems` and `changedItemIds`), or keep it on the device like the timer. Give the field a non-default value in the round-trip test data in `items.test.ts`, so a field left out of the items fails that test ([ADR-006](docs/adr/0006-sync-per-item.md)).
 
 ### Add a dialog or sheet that loads on demand
 
@@ -148,7 +151,7 @@ The dialog now lives in its own chunk, and it's preloaded once the page is idle.
 npx shadcn add <component>
 ```
 
-It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 557 kB (177 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
+It lands in `src/components/ui/`, and `components.json` points the CLI's `utils` and `hooks` aliases at `src/lib/_utils/cn.ts` and `src/lib/_hooks/`. Check `npm run build` afterwards. The first load is about 573 kB (182 kB gzipped), so lazy-load anything heavy that isn't needed on the first screen.
 
 ### Refresh the problem list
 

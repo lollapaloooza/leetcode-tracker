@@ -3,6 +3,7 @@ import { PythonIcon } from '@/components/PythonIcon'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { useUI } from '@/lib/store'
+import { AccountButton } from './AccountButton'
 import { MainNav } from './MainNav'
 import { ThemeToggle } from './ThemeToggle'
 import { TimerPill } from './TimerPill'
@@ -12,8 +13,9 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 const LABEL = 'max-sm:hidden lg:max-xl:hidden'
 
 /**
- * Title, tabs and tools. The tabs sit between the two on wide screens and wrap onto a row of their
- * own below `lg`; phones have the tab bar at the bottom instead, and keep only Search and Settings.
+ * Title, tabs and tools, then the account. The tabs sit between the two on wide screens and wrap onto
+ * a row of their own below `lg`; phones have the tab bar at the bottom instead, and keep only Search,
+ * Settings and the account.
  */
 export function TopBar({ today }: { today: string }) {
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
@@ -59,6 +61,8 @@ export function TopBar({ today }: { today: string }) {
           >
             <Settings2Icon />
           </Button>
+          <span aria-hidden className="mx-1 h-5 w-px bg-border max-sm:hidden" />
+          <AccountButton />
         </div>
       </div>
     </header>

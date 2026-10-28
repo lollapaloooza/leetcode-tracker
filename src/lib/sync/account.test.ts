@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { savedUid, useAccount, type Account } from '@/lib/store'
 import { signInError, signInWith, signOutWith, watchAccount, type AuthClient } from './account'
 
@@ -18,6 +18,8 @@ function fakeClient(signIn: () => Promise<void> = async () => {}) {
   }
   return { client, report: (account: Account | null) => listener(account) }
 }
+
+afterEach(() => vi.restoreAllMocks())
 
 const failWith = (code: string) => async () => {
   throw Object.assign(new Error(code), { code })
@@ -64,6 +66,7 @@ describe('account', () => {
   })
 
   it('says why sign-in failed', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     const { client } = fakeClient(failWith('auth/popup-blocked'))
     await signInWith(client)
     expect(useAccount.getState().status).toBe('signed-out')
@@ -96,10 +99,11 @@ describe('signInError', () => {
   it.each([
     ['auth/popup-closed-by-user', null],
     ['auth/cancelled-popup-request', null],
-    ['auth/network-request-failed', /connection/],
-    ['auth/unauthorized-domain', /Authorized domains/],
-    ['auth/operation-not-allowed', /Sign-in method/],
+    ['auth/network-request-failed', /No connection/],
+    ['auth/unauthorized-domain', /not set up/],
+    ['auth/operation-not-allowed', /is off/],
   ])('%s', (code, expected) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     const message = signInError({ code })
     if (expected === null) expect(message).toBeNull()
     else expect(message).toMatch(expected)
@@ -107,8 +111,7 @@ describe('signInError', () => {
 
   it('gives a general message for anything else, and logs it', () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
-    expect(signInError(new Error('boom'))).toBe('Sign-in didn’t work. Try again in a moment.')
+    expect(signInError(new Error('boom'))).toBe('Sign-in failed. Try again.')
     expect(logged).toHaveBeenCalledOnce()
-    logged.mockRestore()
   })
 })

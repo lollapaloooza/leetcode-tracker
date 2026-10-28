@@ -29,7 +29,7 @@ export function withSync(run: (sync: SyncModule) => unknown) {
   loadSync().then(run, () =>
     useAccount.setState((s) => ({
       status: s.account ? 'signed-in' : 'signed-out',
-      error: 'Couldn’t load sign-in. Check your connection, then try again.',
+      error: 'Cannot load sign-in. Try again.',
     })),
   )
 }

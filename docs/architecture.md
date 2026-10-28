@@ -10,7 +10,7 @@ A local-first single-page app. Everything runs in the browser, and the saved dat
 index.html  critical CSS + theme script (paint the right background before any JS loads)
    │
 main.tsx ─▶ ErrorBoundary ─▶ App
-                               ├─ header (components/shell): title, tabs, timer pill, ⌘K, Python, theme, Settings
+                               ├─ header (components/shell): title, tabs, timer pill, ⌘K, Python, theme, Settings, account
                                ├─ Today | Problems | Patterns* | History*        (* lazy)
                                ├─ Sidebar: Progress (with interview pace), This week, Focus
                                ├─ phones: NowBar + tab bar, sticky at the bottom
@@ -19,7 +19,8 @@ main.tsx ─▶ ErrorBoundary ─▶ App
 components ──read/write──▶ lib/store ──rules──▶ lib/domain ──▶ lib/_consts, lib/_utils
     │                          │
     │                          └─ persist ──▶ localStorage["leetcode-tracker"]  (version 3)
-    └─ lib/sync/load ──lazy──▶ lib/sync* (Firebase Auth) ──▶ useAccount, localStorage["leetcode-tracker-sync"]
+    └─ lib/sync/load ──lazy──▶ lib/sync* (Firebase Auth + Firestore Lite) ⇄ users/{uid}/items/* in Firestore
+                                   └─ useAccount, localStorage["leetcode-tracker-sync"] (uid, unsent items, last fetch)
 ```
 
 ## Layers
@@ -90,6 +91,13 @@ Components subscribe to the fields they read (`useTracker((s) => s.plans)`). Eve
 
 Backups and saves share one shape and one validator.
 
+**Sync, when signed in** ([ADR-006](adr/0006-sync-per-item.md)). The engine ([`lib/sync/engine.ts`](../src/lib/sync/engine.ts)) sits beside the store:
+
+- **Up:** it subscribes to the store. `changedItemIds()` names the items a change touched (a problem, an attempt, a day's plan, …). 2 s later they go up as Firestore documents, one per item. Unsent items are saved, so they survive offline and a closed tab.
+- **Down:** on start, when back online, and when the tab comes back, it fetches the items written since the last fetch. They're joined into the data with `withItems()`, through `normalize()`, and set without counting as local changes.
+- **First sign-in on a device:** both sides are kept if no item differs. Otherwise `SyncChoiceDialog` asks: cloud or this device.
+- **Not synced:** the running timer and the welcome-back day.
+
 **Crashes.** `ErrorBoundary` replaces a blank page with a screen that reads localStorage directly, without going through the store, which may be what's broken. It offers to download the raw saved JSON, reload, or reset in two steps (removing the saved key).
 
 ## Time
@@ -105,7 +113,7 @@ Backups and saves share one shape and one validator.
 | `useTracker` | Yes, localStorage | `TrackerData` plus the actions that change it |
 | `useUI` | No | Current tab; which dialog, drawer or sheet is open (Settings, the Start drawer); the log-attempt target; the toast; the row that just landed (it glows); and whether the Now card was emptied today |
 | `usePrefs` | Yes, `leetcode-tracker-prefs`, this device only | What Start opens: ask, LeetCode, NeetCode, or only the timer. Never backed up or synced. |
-| `useAccount` | Only the uid, in `leetcode-tracker-sync`, so the next visit restores the sign-in | Who's signed in, whether a sign-in is being checked or in progress, and why the last one failed |
+| `useAccount` | No; the sync state saves the uid in `leetcode-tracker-sync`, so the next visit restores the sign-in | Who's signed in, whether a sign-in is being checked or in progress, why the last one failed, and the first-sign-in question ("cloud or this device") while it's open |
 
 **Today's order.** `dayOrder()` in [`domain/day.ts`](../src/lib/domain/day.ts) turns the plan, the goal and the timer into what the Today screen shows:
 
@@ -156,21 +164,23 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 
 ## Loading
 
-- **First load:** about 557 kB of JavaScript (177 kB gzipped).
+- **First load:** about 573 kB of JavaScript (182 kB gzipped).
 - **What's split out:** anything not needed for the first screen goes into its own chunk through `lazyComponent()` ([`_utils/lazy.ts`](../src/lib/_utils/lazy.ts)): History, Patterns, ⌘K, the problem drawer, the Python sheet, the Settings sheet, the short-on-time and calendar dialogs, the Start drawer, and the date picker (72 kB on its own).
 - **When it loads:** each chunk registers a preloader, and `App` runs them all once the browser is idle. In practice, nothing waits on the network when you open it. A failed load is retried the next time.
 - **How dialogs mount:** `MountWhenOpened` ([`shell/Overlays.tsx`](../src/components/shell/Overlays.tsx)) mounts a lazy dialog the first time it opens, and keeps it mounted so the close animation still plays.
-- **Firebase:** the `sync` chunk (Firebase Auth, about 30 kB gzipped) is not among the idle preloads. It loads when Settings opens, so Sign in can open Google's popup straight from the click, or at startup for someone who signed in before. Lint stops any other import of `firebase` or `@/lib/sync`.
+- **Firebase:** the `sync` chunk (Firebase Auth and Firestore Lite, about 65 kB gzipped) is not among the idle preloads. It loads when the sign-in card opens, so its Google button can open Google's popup straight from the click, or at startup for someone who signed in before. Lint stops any other import of `firebase` or `@/lib/sync`.
 - **Shortcuts:** they live outside the lazy part. The ⌘K listener (`usePaletteShortcut`) is registered by `Overlays`, so it works before the palette's code has arrived.
 
 ## Hosting and sign-in
 
 - **Hosting:** Firebase Hosting serves `dist/` ([`firebase.json`](../firebase.json)). Hashed files under `/assets/` are cached for a year; `index.html` is revalidated on every visit. There's no SPA rewrite, so a missing old chunk is a clear 404. `npm run deploy` runs the check, builds, and deploys the hosting and the Firestore rules.
 - **Config:** the web app's Firebase config is in [`.env`](../.env). It isn't a secret: it names the project, and [`firestore.rules`](../firestore.rules) protect the data.
-- **Signing in:** Settings › Your data has the account row.
+- **Signing in:** the last button in the header ([`shell/AccountButton.tsx`](../src/components/shell/AccountButton.tsx)): a person icon, or your photo once you're signed in. It opens a popover, or a bottom sheet on phones: a short sign-in card, or a menu with Settings, Export backup and Sign out.
   - Sign in opens Google's popup ([`lib/sync/auth.ts`](../src/lib/sync/auth.ts)). A popup, unlike a redirect, works in browsers that block third-party storage, so the project's own `authDomain` works everywhere.
   - Firebase keeps the session in IndexedDB. `useAccount` mirrors who's signed in, and the uid saved under `leetcode-tracker-sync` tells the next visit to restore it (`resumeSync()`).
-  - Closing the popup isn't an error; other failures show a message in the row.
+  - Closing the popup isn't an error; other failures show one short line in the card.
+  - Signing in starts sync for that account (`lib/sync/index.ts`); signing out stops it and forgets its sync state. The progress stays on the device.
+- **Data in Firestore:** `users/{uid}/items/{item}`, one document per item, `{ data, schema, updatedAt }`. Deleting writes `data: null`. The rules let each person read and write only their own items.
 - **Locally:** `npm run emulators` runs the Auth and Firestore emulators (Java 21+). Set `VITE_USE_EMULATORS=true` in `.env.local` to sign in against them.
 
 ## Theme
@@ -184,12 +194,13 @@ One set of tabs is laid out three ways. Radix `Tabs` wraps the whole page, so th
 
 Tests sit next to the code they cover, in two Vitest projects:
 
-- **`unit` (`*.test.ts`, Node):** `_consts` (enum lists against their labels), `_utils` (dates, .ics), `domain` (SRS, status, planning, insights), `store/persistence` (`normalize`, export, backup parsing), and `lib/sync`: the account logic against a fake sign-in provider, and when the chunk loads.
-- **`dom` (`*.test.tsx`, jsdom + Testing Library):** components and hooks, tested the way they're used — by role and accessible name, through clicks and keys, asserting on the screen and the stores. Covered: the layout by width (`App`), the shell (header tabs, phone tab bar, timer pill, NowBar), Settings, the sidebar, the command palette, the Today view (Now card, heading, queue, keyboard and long-press reordering, the empty Now card, the backlog), the Start drawer and toasts, `useTheme`, `useMediaQuery` and `useRetained`. Store actions and preferences have unit tests too.
+- **`unit` (`*.test.ts`, Node):** `_consts` (enum lists against their labels), `_utils` (dates, .ics), `domain` (SRS, status, planning, insights), `store/persistence` (`normalize`, export, backup parsing), and `lib/sync`: the account logic against a fake sign-in provider, when the chunk loads, the item mapping, and the sync engine against an in-memory cloud.
+- **`dom` (`*.test.tsx`, jsdom + Testing Library):** components and hooks, tested the way they're used — by role and accessible name, through clicks and keys, asserting on the screen and the stores. Covered: the layout by width (`App`), the shell (header tabs, phone tab bar, timer pill, NowBar), Settings, the sidebar, the command palette, the Today view (Now card, heading, queue, keyboard and long-press reordering, the empty Now card, the backlog), the Start drawer and toasts, the account button and the sync question, `useTheme`, `useMediaQuery` and `useRetained`. Store actions and preferences have unit tests too.
 - **Support:** [`src/test/builders.ts`](../src/test/builders.ts) builds test data (`idOf`, `attempt`, `progressOf`, `tracker`); [`src/test/stores.ts`](../src/test/stores.ts) resets the stores; [`src/test/setup-dom.ts`](../src/test/setup-dom.ts) gives each component test a clean DOM, storage and stores, plus the browser APIs jsdom lacks, and swaps the sync chunk for a fake, so no component test reaches Firebase.
 - **Not covered yet:** pointer dragging, the other views and dialogs, and store actions on their own. They get tests as later slices of [ADR-004](adr/0004-layout-redesign.md) touch them; end-to-end tests are planned.
 
 ## Known limits
 
-- **One browser, one tab:** two open tabs each keep their own copy, so the last tab to change something overwrites the other's changes. The fix (reloading saved data on `storage` events) is Phase 0 of [ADR-002](adr/0002-hosting-auth-sync.md).
-- **Local only:** a cleared browser loses everything since the last export. Once the app is hosted, Safari can also clear a site's storage after 7 days without a visit. Cloud sync ([ADR-002](adr/0002-hosting-auth-sync.md)) addresses both.
+- **Two open tabs** each keep their own copy, so the last tab to change something overwrites the other's local copy. Signed in, each tab uploads only what changed in it, and fetches the rest when you come back to it.
+- **Signed out, local only:** a cleared browser loses everything since the last export, and Safari can clear a site's storage after 7 days without a visit. Signing in keeps a copy in the cloud.
+- **Same item on two devices while one is offline:** the later upload wins for that item (one problem, one day's plan, the backlog or the settings).

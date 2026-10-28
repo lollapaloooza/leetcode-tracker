@@ -1,4 +1,3 @@
-import { initializeApp } from 'firebase/app'
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
@@ -13,10 +12,11 @@ import {
 } from 'firebase/auth'
 import type { Account } from '@/lib/store'
 import type { AuthClient } from './account'
-import { firebaseConfig, withEmulators } from './config'
+import { app } from './app'
+import { withEmulators } from './config'
 
 // Only the pieces popup sign-in needs, which keeps the chunk small (ADR-002 §3.7).
-const auth = initializeAuth(initializeApp(firebaseConfig), {
+const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver,
 })
